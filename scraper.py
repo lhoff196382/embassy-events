@@ -1,192 +1,316 @@
 """
 Embassy Cultural Events Scraper — Brasília
-Busca eventos culturais em embaixadas e consulados via DuckDuckGo Search API.
+Busca eventos nos sites oficiais e Instagram das embaixadas/institutos culturais.
 """
 
 import os
 import re
-import json
 import datetime
 import smtplib
 import urllib.request
 import urllib.parse
+from html.parser import HTMLParser
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
-# ── Embaixadas e fontes conhecidas ────────────────────────────────────────────
-EMBASSY_SITES = [
-    {"name": "Instituto Francês do Brasil", "url": "https://www.institutfrancais.com.br/brasilia"},
-    {"name": "Goethe-Institut Brasília",    "url": "https://www.goethe.de/ins/br/pt/sta/bra.html"},
-    {"name": "Instituto Cervantes Brasília", "url": "https://brasilia.cervantes.es"},
-    {"name": "British Council Brasil",       "url": "https://www.britishcouncil.org.br"},
-    {"name": "Instituto Italiano de Cultura","url": "https://iicbrasilia.esteri.it"},
-    {"name": "Instituto Camões Brasília",    "url": "https://www.instituto-camoes.pt"},
-    {"name": "Centro Cultural do Japão",     "url": "https://www.br.emb-japan.go.jp"},
-    {"name": "Embaixada dos EUA Brasília",   "url": "https://br.usembassy.gov"},
+# ── Fontes: sites oficiais ────────────────────────────────────────────────────
+EMBASSY_PAGES = [
+    {
+        "name": "Goethe-Institut Brasília",
+        "url": "https://www.goethe.de/ins/br/pt/sta/bra/ver.html",
+        "flag": "🇩🇪",
+    },
+    {
+        "name": "Institut Français Brasília",
+        "url": "https://www.institutfrancais.com.br/brasilia/agenda",
+        "flag": "🇫🇷",
+    },
+    {
+        "name": "Instituto Cervantes Brasília",
+        "url": "https://brasilia.cervantes.es/pt/actividades_espanol/actividades_espanol.htm",
+        "flag": "🇪🇸",
+    },
+    {
+        "name": "British Council Brasil",
+        "url": "https://www.britishcouncil.org.br/eventos",
+        "flag": "🇬🇧",
+    },
+    {
+        "name": "Instituto Italiano de Cultura",
+        "url": "https://iicbrasilia.esteri.it/pt/gli_eventi/",
+        "flag": "🇮🇹",
+    },
+    {
+        "name": "Embaixada dos EUA — Eventos",
+        "url": "https://br.usembassy.gov/pt/eventos/",
+        "flag": "🇺🇸",
+    },
+    {
+        "name": "Embaixada do Japão",
+        "url": "https://www.br.emb-japan.go.jp/itpr_pt/eventinformation.html",
+        "flag": "🇯🇵",
+    },
+    {
+        "name": "Centro Cultural do Banco do Brasil (Brasília)",
+        "url": "https://culturabancodobrasil.com.br/portal/brasilia/",
+        "flag": "🇧🇷",
+    },
 ]
 
-SEARCH_QUERIES = [
-    "eventos culturais embaixadas consulados Brasília 2025 grátis",
-    "agenda cultural embaixadas Brasília shows exposições 2025",
-    "eventos embaixada francesa alemã italiana Brasília 2025",
-    "cultura diplomática agenda Brasília embaixadas 2025",
+# ── Perfis do Instagram ───────────────────────────────────────────────────────
+INSTAGRAM_PROFILES = [
+    {"name": "Institut Français Brasília", "user": "ifbrasil",         "flag": "🇫🇷"},
+    {"name": "Goethe-Institut Brasil",     "user": "goethe_brasil",    "flag": "🇩🇪"},
+    {"name": "Instituto Cervantes Bsb",    "user": "cervantes_brasil", "flag": "🇪🇸"},
+    {"name": "British Council Brasil",     "user": "britishcouncilbr", "flag": "🇬🇧"},
+    {"name": "Embaixada EUA Brasil",       "user": "embaixadaeua",     "flag": "🇺🇸"},
+    {"name": "Instituto Italiano Bsb",     "user": "iicbrasilia",      "flag": "🇮🇹"},
+    {"name": "Embaixada do Japão BR",      "user": "embaixadadojapao", "flag": "🇯🇵"},
+    {"name": "Embaixada da França BR",     "user": "francenobrasil",   "flag": "🇫🇷"},
+    {"name": "Embaixada Alemã BR",         "user": "alemanha.brasil",  "flag": "🇩🇪"},
+    {"name": "Embaixada UK Brasil",        "user": "ukembassybrazil",  "flag": "🇬🇧"},
 ]
-
-
-def search_duckduckgo(query: str, max_results: int = 10) -> list[dict]:
-    """Busca via DuckDuckGo Instant Answer API (sem chave)."""
-    params = urllib.parse.urlencode({
-        "q": query,
-        "format": "json",
-        "no_html": "1",
-        "skip_disambig": "1",
-    })
-    url = f"https://api.duckduckgo.com/?{params}"
-    try:
-        req = urllib.request.Request(url, headers={"User-Agent": "EmbassyEventsBot/1.0"})
-        with urllib.request.urlopen(req, timeout=10) as resp:
-            data = json.loads(resp.read().decode())
-        results = []
-        for topic in data.get("RelatedTopics", [])[:max_results]:
-            text = topic.get("Text", "")
-            link = topic.get("FirstURL", "")
-            if text:
-                results.append({"text": text, "url": link})
-        return results
-    except Exception as e:
-        print(f"  Erro DuckDuckGo: {e}")
-        return []
-
-
-def search_serpapi(query: str) -> list[dict]:
-    """Busca via SerpAPI (requer SERPAPI_KEY no env). Fallback opcional."""
-    api_key = os.getenv("SERPAPI_KEY")
-    if not api_key:
-        return []
-    params = urllib.parse.urlencode({
-        "q": query,
-        "location": "Brasília, Brazil",
-        "hl": "pt",
-        "gl": "br",
-        "api_key": api_key,
-        "engine": "google",
-        "num": "10",
-    })
-    url = f"https://serpapi.com/search?{params}"
-    try:
-        req = urllib.request.Request(url)
-        with urllib.request.urlopen(req, timeout=15) as resp:
-            data = json.loads(resp.read().decode())
-        results = []
-        for r in data.get("organic_results", [])[:10]:
-            results.append({
-                "text": f"{r.get('title','')} — {r.get('snippet','')}",
-                "url": r.get("link", ""),
-            })
-        return results
-    except Exception as e:
-        print(f"  Erro SerpAPI: {e}")
-        return []
-
 
 # ── Detecção de preço ─────────────────────────────────────────────────────────
-FREE_KEYWORDS = re.compile(
-    r"\bgratu[ií]t[ao]s?\b|\bfree\b|\bentrada\s+franca\b|\bsem\s+cobran[çc]a\b",
+FREE_RE = re.compile(
+    r"\bgratu[ií]t[ao]s?\b|\bfree\b|\bentrada\s+franca\b|\bsem\s+cobran[çc]a\b|\blivre\b",
     re.IGNORECASE,
 )
-PAID_KEYWORDS = re.compile(
-    r"\bingressos?\b|\bpago\b|\bpaid\b|\bticket\b|\br\$\s*\d|\bvalor\b|\bcobran[çc]a\b",
+PAID_RE = re.compile(
+    r"\bingressos?\b|\bpago\b|\bpaid\b|\btickets?\b|\br\$\s*\d|\bvalor\b|\bcompre\b|\bcomprar\b",
     re.IGNORECASE,
 )
 
 def classify_price(text: str) -> str:
-    has_free = bool(FREE_KEYWORDS.search(text))
-    has_paid = bool(PAID_KEYWORDS.search(text))
+    has_free = bool(FREE_RE.search(text))
+    has_paid = bool(PAID_RE.search(text))
     if has_free and not has_paid:
         return "✅ Gratuito"
     if has_paid and not has_free:
         return "💰 Pago"
     if has_free and has_paid:
-        return "🎟️ Parcialmente pago / verificar"
+        return "🎟️ Verificar preço"
     return "❓ Não informado"
 
 
-# ── Coleta de eventos ─────────────────────────────────────────────────────────
-def collect_events() -> list[dict]:
-    events = []
-    seen_urls = set()
+# ── HTML Parser simples ───────────────────────────────────────────────────────
+class TextExtractor(HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self.chunks = []
+        self._skip = False
 
-    for query in SEARCH_QUERIES:
-        print(f"Buscando: {query}")
-        # Tenta SerpAPI primeiro; senão DuckDuckGo
-        results = search_serpapi(query) or search_duckduckgo(query)
-        for r in results:
-            url = r.get("url", "")
-            if url in seen_urls:
-                continue
-            seen_urls.add(url)
-            text = r.get("text", "")
+    def handle_starttag(self, tag, attrs):
+        if tag in ("script", "style", "nav", "footer", "head"):
+            self._skip = True
+
+    def handle_endtag(self, tag):
+        if tag in ("script", "style", "nav", "footer", "head"):
+            self._skip = False
+
+    def handle_data(self, data):
+        if not self._skip:
+            text = data.strip()
+            if text:
+                self.chunks.append(text)
+
+    def get_text(self):
+        return " ".join(self.chunks)
+
+
+def fetch_url(url: str, timeout: int = 15) -> str:
+    """Baixa uma página e retorna o texto limpo."""
+    headers = {
+        "User-Agent": (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/124.0.0.0 Safari/537.36"
+        ),
+        "Accept-Language": "pt-BR,pt;q=0.9,en;q=0.8",
+    }
+    try:
+        req = urllib.request.Request(url, headers=headers)
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            raw = resp.read().decode("utf-8", errors="ignore")
+        parser = TextExtractor()
+        parser.feed(raw)
+        return parser.get_text()
+    except Exception as e:
+        print(f"  Erro ao acessar {url}: {e}")
+        return ""
+
+
+# ── Extrai trechos com palavras-chave de eventos ──────────────────────────────
+EVENT_RE = re.compile(
+    r".{0,120}(exposi[çc][ãa]o|concerto|show|palestra|workshop|semin[aá]rio|"
+    r"festival|exibi[çc][ãa]o|cinema|teatro|dan[çc]a|m[úu]sica|cultura|evento|"
+    r"inaugura[çc][ãa]o|leitura|sarau).{0,200}",
+    re.IGNORECASE,
+)
+
+def extract_event_snippets(text: str, max_snippets: int = 5) -> list[str]:
+    matches = EVENT_RE.findall(text)
+    seen = set()
+    result = []
+    for m in matches:
+        clean = re.sub(r"\s+", " ", m).strip()
+        key = clean[:60].lower()
+        if key not in seen:
+            seen.add(key)
+            result.append(clean)
+        if len(result) >= max_snippets:
+            break
+    return result
+
+
+# ── Scraping dos sites oficiais ───────────────────────────────────────────────
+def scrape_websites() -> list[dict]:
+    events = []
+    for src in EMBASSY_PAGES:
+        print(f"  Acessando site: {src['name']}")
+        text = fetch_url(src["url"])
+        if not text:
+            continue
+        snippets = extract_event_snippets(text)
+        if snippets:
+            for snippet in snippets:
+                events.append({
+                    "source": f"{src['flag']} {src['name']}",
+                    "title": snippet[:180],
+                    "price": classify_price(snippet),
+                    "url": src["url"],
+                    "channel": "🌐 Site oficial",
+                })
+        else:
+            # Mesmo sem evento explícito, registra que o site foi verificado
             events.append({
-                "title": text[:120],
-                "url": url,
-                "price": classify_price(text),
-                "source": query,
+                "source": f"{src['flag']} {src['name']}",
+                "title": "Sem eventos com palavras-chave encontrados — acesse o site para conferir",
+                "price": "❓ Não informado",
+                "url": src["url"],
+                "channel": "🌐 Site oficial",
             })
+    return events
+
+
+# ── Scraping do Instagram (via instaloader) ───────────────────────────────────
+def scrape_instagram() -> list[dict]:
+    try:
+        import instaloader
+    except ImportError:
+        print("  instaloader não instalado — pulando Instagram")
+        return []
+
+    events = []
+    L = instaloader.Instaloader(
+        download_pictures=False,
+        download_videos=False,
+        download_video_thumbnails=False,
+        download_geotags=False,
+        download_comments=False,
+        save_metadata=False,
+        quiet=True,
+    )
+
+    cutoff = datetime.datetime.now() - datetime.timedelta(days=10)
+
+    for profile_info in INSTAGRAM_PROFILES:
+        username = profile_info["user"]
+        print(f"  Instagram: @{username}")
+        try:
+            profile = instaloader.Profile.from_username(L.context, username)
+            for post in profile.get_posts():
+                if post.date_local < cutoff:
+                    break
+                caption = post.caption or ""
+                snippets = extract_event_snippets(caption, max_snippets=2)
+                if snippets:
+                    for snippet in snippets:
+                        events.append({
+                            "source": f"{profile_info['flag']} {profile_info['name']}",
+                            "title": snippet[:180],
+                            "price": classify_price(caption),
+                            "url": f"https://www.instagram.com/{username}/",
+                            "channel": "📸 Instagram",
+                        })
+        except Exception as e:
+            print(f"    Erro @{username}: {e}")
+            continue
 
     return events
 
 
-# ── E-mail ─────────────────────────────────────────────────────────────────────
-def build_html(events: list[dict]) -> str:
+# ── Monta o e-mail HTML ───────────────────────────────────────────────────────
+def build_html(web_events: list[dict], ig_events: list[dict]) -> str:
     today = datetime.date.today().strftime("%d/%m/%Y")
-    rows = ""
-    for ev in events:
-        url = ev["url"]
-        link = f'<a href="{url}">{url[:60]}…</a>' if url else "—"
-        rows += f"""
-        <tr>
-          <td style="padding:8px;border-bottom:1px solid #eee">{ev['title']}</td>
-          <td style="padding:8px;border-bottom:1px solid #eee;white-space:nowrap">{ev['price']}</td>
-          <td style="padding:8px;border-bottom:1px solid #eee;font-size:12px">{link}</td>
-        </tr>"""
 
-    if not rows:
-        rows = '<tr><td colspan="3" style="padding:16px;text-align:center;color:#888">Nenhum evento encontrado nesta varredura.</td></tr>'
+    def make_rows(items):
+        if not items:
+            return '<tr><td colspan="4" style="padding:16px;text-align:center;color:#888">Nenhum resultado encontrado.</td></tr>'
+        rows = ""
+        for ev in items:
+            rows += f"""
+            <tr>
+              <td style="padding:8px;border-bottom:1px solid #eee">{ev['source']}</td>
+              <td style="padding:8px;border-bottom:1px solid #eee">{ev['title']}</td>
+              <td style="padding:8px;border-bottom:1px solid #eee;white-space:nowrap">{ev['price']}</td>
+              <td style="padding:8px;border-bottom:1px solid #eee;font-size:12px">
+                <a href="{ev['url']}">{ev['channel']}</a>
+              </td>
+            </tr>"""
+        return rows
 
-    return f"""
-<!DOCTYPE html>
+    table_header = """
+      <thead>
+        <tr style="background:#1a3c6e;color:#fff">
+          <th style="padding:10px;text-align:left">Embaixada / Instituto</th>
+          <th style="padding:10px;text-align:left">Evento / Descrição</th>
+          <th style="padding:10px;text-align:left">Preço</th>
+          <th style="padding:10px;text-align:left">Fonte</th>
+        </tr>
+      </thead>"""
+
+    web_rows = make_rows(web_events)
+    ig_rows  = make_rows(ig_events)
+
+    return f"""<!DOCTYPE html>
 <html lang="pt-BR">
 <head><meta charset="utf-8"></head>
-<body style="font-family:Arial,sans-serif;max-width:800px;margin:auto;padding:24px">
+<body style="font-family:Arial,sans-serif;max-width:860px;margin:auto;padding:24px">
+
   <h2 style="color:#1a3c6e">🌍 Eventos Culturais — Embaixadas e Consulados em Brasília</h2>
   <p style="color:#555">Varredura realizada em <strong>{today}</strong>. Próxima em 5 dias.</p>
-  <table width="100%" cellspacing="0" style="border-collapse:collapse;margin-top:16px">
-    <thead>
-      <tr style="background:#1a3c6e;color:#fff">
-        <th style="padding:10px;text-align:left">Evento / Descrição</th>
-        <th style="padding:10px;text-align:left">Preço</th>
-        <th style="padding:10px;text-align:left">Link</th>
-      </tr>
-    </thead>
-    <tbody>{rows}</tbody>
+
+  <h3 style="color:#1a3c6e;margin-top:28px">🌐 Sites Oficiais</h3>
+  <table width="100%" cellspacing="0" style="border-collapse:collapse">
+    {table_header}
+    <tbody>{web_rows}</tbody>
   </table>
+
+  <h3 style="color:#1a3c6e;margin-top:36px">📸 Instagram</h3>
+  <table width="100%" cellspacing="0" style="border-collapse:collapse">
+    {table_header}
+    <tbody>{ig_rows}</tbody>
+  </table>
+
   <hr style="margin-top:32px">
   <p style="font-size:11px;color:#aaa">
-    Fontes monitoradas: Instituto Francês, Goethe-Institut, Instituto Cervantes, British Council,
-    Instituto Italiano, Instituto Camões, Embaixada do Japão, Embaixada dos EUA — Brasília.<br>
-    Para remover este e-mail, exclua o workflow no GitHub Actions.
+    Fontes monitoradas: Institut Français, Goethe-Institut, Instituto Cervantes, British Council,
+    Instituto Italiano, Embaixada dos EUA, Embaixada do Japão, Embaixada do Reino Unido,
+    Embaixada da França, Embaixada da Alemanha — Brasília/DF.
   </p>
 </body>
 </html>"""
 
 
-def send_email(html: str, events: list[dict]):
+# ── Envio do e-mail ───────────────────────────────────────────────────────────
+def send_email(html: str, total: int):
     sender    = os.environ["GMAIL_USER"]
     password  = os.environ["GMAIL_APP_PASSWORD"]
     recipient = os.environ.get("EMAIL_TO", sender)
 
     msg = MIMEMultipart("alternative")
-    msg["Subject"] = f"🌍 Eventos Culturais — Embaixadas Brasília ({datetime.date.today().strftime('%d/%m/%Y')})"
+    msg["Subject"] = f"🌍 Eventos Culturais — Embaixadas Brasília ({datetime.date.today().strftime('%d/%m/%Y')}) — {total} resultado(s)"
     msg["From"]    = sender
     msg["To"]      = recipient
     msg.attach(MIMEText(html, "html", "utf-8"))
@@ -194,13 +318,22 @@ def send_email(html: str, events: list[dict]):
     with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
         server.login(sender, password)
         server.sendmail(sender, recipient, msg.as_string())
-    print(f"E-mail enviado para {recipient} com {len(events)} evento(s).")
+    print(f"✅ E-mail enviado para {recipient} com {total} resultado(s).")
 
 
-# ── Main ───────────────────────────────────────────────────────────────────────
+# ── Main ──────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
-    print("=== Embassy Events Scraper ===")
-    events = collect_events()
-    print(f"Total de resultados: {len(events)}")
-    html = build_html(events)
-    send_email(html, events)
+    print("=== Embassy Events Scraper — Brasília ===")
+
+    print("\n[1/2] Buscando nos sites oficiais...")
+    web_events = scrape_websites()
+    print(f"      {len(web_events)} resultado(s) nos sites.")
+
+    print("\n[2/2] Buscando no Instagram...")
+    ig_events = scrape_instagram()
+    print(f"      {len(ig_events)} resultado(s) no Instagram.")
+
+    total = len(web_events) + len(ig_events)
+    print(f"\nTotal: {total} resultado(s). Enviando e-mail...")
+    html = build_html(web_events, ig_events)
+    send_email(html, total)
