@@ -39,6 +39,10 @@ DDG_QUERIES = [
     "Embaixada Japão EUA eventos culturais Brasília 2026",
 ]
 
+# ── Sympla ────────────────────────────────────────────────────────────────────
+SYMPLA_URL  = "https://www.sympla.com.br/eventos/brasilia-df"
+SYMPLA_API  = "https://www.sympla.com.br/api/public/v1/events?page=1&page_size=20&state=DF&city=Brasília&od=date"
+
 # ── Perfis Instagram ──────────────────────────────────────────────────────────
 INSTAGRAM_PROFILES = [
     {"name":"Institut Français Brasília",  "user":"ifbrasil",         "flag":"🇫🇷"},
@@ -257,6 +261,108 @@ def scrape_instagram():
 
     return events
 
+# ── 4. Sympla ─────────────────────────────────────────────────────────────────
+SYMPLA_DATE_RE = re.compile(
+    r"(seg|ter|qua|qui|sex|s[áa]b|dom)[^,]*,\s*(\d{1,2})\s+de\s+(\w+)"
+    r"(?:\s+de\s+(\d{4}))?(?:\s+[àa]s?\s+(\d{1,2}:\d{2}))?",
+    re.I,
+)
+
+def scrape_sympla():
+    events = []
+
+    # ── Tentativa 1: API interna JSON ─────────────────────────────────────────
+    print("  Sympla: tentando API JSON...")
+    raw = fetch(SYMPLA_API, headers={
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+        "Accept":     "application/json, text/plain, */*",
+        "Referer":    "https://www.sympla.com.br/",
+        "Origin":     "https://www.sympla.com.br",
+    })
+
+    api_ok = False
+    if raw:
+        try:
+            data = json.loads(raw)
+            items = data.get("data", data.get("events", []))
+            for ev in items:
+                name      = ev.get("name", "") or ev.get("title", "")
+                link      = ev.get("url",  "") or f"https://www.sympla.com.br/evento/{ev.get('id','')}"
+                start_dt  = ev.get("start_date", "") or ev.get("date", "")
+                free_flag = ev.get("free", False) or str(ev.get("price_min", "1")) == "0"
+                price     = "✅ Gratuito" if free_flag else classify_price(name)
+                full      = f"{name} {start_dt}"
+
+                if not name:
+                    continue
+
+                events.append({
+                    "source":  "🎟️ Sympla",
+                    "title":   name[:200],
+                    "date":    date_label(full) if start_dt else "📅 A confirmar",
+                    "price":   price,
+                    "url":     link,
+                    "channel": "🎟️ Sympla",
+                })
+            if events:
+                api_ok = True
+                print(f"    {len(events)} evento(s) via API")
+        except Exception as e:
+            print(f"    API JSON falhou: {e}")
+
+    # ── Tentativa 2: DuckDuckGo filtrado para sympla.com.br ───────────────────
+    if not api_ok:
+        print("  Sympla: buscando via DuckDuckGo site:sympla.com.br...")
+        queries = [
+            "site:sympla.com.br eventos Brasília DF 2026",
+            "site:sympla.com.br cultura teatro música Brasília 2026",
+        ]
+        seen = set()
+        for query in queries:
+            params = urllib.parse.urlencode({"q": query, "kl": "br-pt"})
+            url    = f"https://html.duckduckgo.com/html/?{params}"
+            try:
+                raw = fetch(url, headers={
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+                    "Accept":     "text/html",
+                    "Referer":    "https://duckduckgo.com/",
+                })
+                if not raw:
+                    continue
+                for m in RESULT_RE.finditer(raw):
+                    link    = strip_tags(m.group(1)).strip()
+                    title   = strip_tags(m.group(2)).strip()
+                    snippet = strip_tags(m.group(3)).strip()
+
+                    if "duckduckgo.com" in link:
+                        try:
+                            qs   = urllib.parse.urlparse(link).query
+                            link = urllib.parse.parse_qs(qs).get("uddg", [link])[0]
+                        except Exception:
+                            pass
+
+                    if link in seen or "sympla.com.br" not in link or not title:
+                        continue
+                    seen.add(link)
+
+                    full = f"{title} {snippet}"
+                    events.append({
+                        "source":  "🎟️ Sympla",
+                        "title":   full[:200],
+                        "date":    date_label(full),
+                        "price":   classify_price(full),
+                        "url":     link,
+                        "channel": "🎟️ Sympla",
+                    })
+
+                import time; time.sleep(2)
+            except Exception as e:
+                print(f"    Erro DDG Sympla: {e}")
+
+        print(f"    {len(events)} evento(s) via DuckDuckGo")
+
+    return events
+
 # ── E-mail ────────────────────────────────────────────────────────────────────
 THEAD = """<thead><tr style="background:#1a3c6e;color:#fff">
   <th style="padding:10px;text-align:left">Instituto / Embaixada</th>
@@ -287,7 +393,7 @@ def section(title, items):
       {THEAD}<tbody>{make_rows(items)}</tbody>
     </table>"""
 
-def build_html(rss, ddg, ig):
+def build_html(rss, ddg, sympla, ig):
     today  = TODAY.strftime("%d/%m/%Y")
     d_from = DATE_FROM.strftime("%d/%m/%Y")
     d_to   = DATE_TO.strftime("%d/%m/%Y")
@@ -305,6 +411,7 @@ def build_html(rss, ddg, ig):
     <a href="https://rotasbrasil.org/rotas-brasil/">rotasbrasil.org — 128 embaixadas em Brasília</a>
   </p>
   {section("📡 RSS — Institutos Culturais", rss)}
+  {section("🎟️ Sympla — Eventos em Brasília/DF", sympla)}
   {section("🔍 DuckDuckGo — Busca Web", ddg)}
   {section("📸 Instagram", ig)}
   <hr style="margin-top:32px">
@@ -334,13 +441,16 @@ if __name__ == "__main__":
     print("\n[1/3] RSS feeds...")
     rss = scrape_rss()
     print(f"      {len(rss)} resultado(s)")
-    print("\n[2/3] DuckDuckGo Search...")
+    print("\n[2/3] Sympla...")
+    sympla = scrape_sympla()
+    print(f"      {len(sympla)} resultado(s)")
+    print("\n[3/4] DuckDuckGo Search...")
     ddg = scrape_ddg()
     print(f"      {len(ddg)} resultado(s)")
-    print("\n[3/3] Instagram...")
+    print("\n[4/4] Instagram...")
     ig = scrape_instagram()
     print(f"      {len(ig)} resultado(s)")
-    total = len(rss) + len(ddg) + len(ig)
+    total = len(rss) + len(sympla) + len(ddg) + len(ig)
     print(f"\nTotal: {total}. Enviando e-mail...")
-    html = build_html(rss, ddg, ig)
+    html = build_html(rss, ddg, sympla, ig)
     send_email(html, total)
