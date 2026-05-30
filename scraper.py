@@ -13,6 +13,119 @@ from html.parser import HTMLParser
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
+# ── Janela de datas ───────────────────────────────────────────────────────────
+TODAY     = datetime.date.today()
+DATE_FROM = TODAY
+DATE_TO   = TODAY + datetime.timedelta(days=30)
+
+MONTHS_PT = {
+    "janeiro": 1, "fevereiro": 2, "março": 3, "marco": 3,
+    "abril": 4, "maio": 5, "junho": 6, "julho": 7,
+    "agosto": 8, "setembro": 9, "outubro": 10,
+    "novembro": 11, "dezembro": 12,
+    "jan": 1, "fev": 2, "mar": 3, "abr": 4, "mai": 5,
+    "jun": 6, "jul": 7, "ago": 8, "set": 9, "out": 10,
+    "nov": 11, "dez": 12,
+}
+
+# Padrões de data em texto (pt-BR e ISO)
+DATE_PATTERNS = [
+    # 30/05/2026 ou 30/05/26
+    re.compile(r"\b(\d{1,2})[/\-\.](\d{1,2})[/\-\.](\d{2,4})\b"),
+    # 30 de maio de 2026 / 30 maio 2026
+    re.compile(
+        r"\b(\d{1,2})\s+(?:de\s+)?("
+        + "|".join(MONTHS_PT.keys())
+        + r")(?:\s+(?:de\s+)?(\d{2,4}))?\b",
+        re.IGNORECASE,
+    ),
+    # maio 30, 2026
+    re.compile(
+        r"\b(" + "|".join(MONTHS_PT.keys()) + r")\s+(\d{1,2})(?:[,\s]+(\d{4}))?\b",
+        re.IGNORECASE,
+    ),
+    # 2026-05-30 (ISO)
+    re.compile(r"\b(\d{4})-(\d{2})-(\d{2})\b"),
+]
+
+
+def extract_dates(text: str) -> list[datetime.date]:
+    """Extrai todas as datas reconhecíveis de um trecho de texto."""
+    found = []
+    year_now = TODAY.year
+
+    for pat in DATE_PATTERNS:
+        for m in pat.finditer(text):
+            g = m.groups()
+            try:
+                # Formato dd/mm/yyyy
+                if re.match(r"\d{1,2}", g[0] or "") and re.match(r"\d{1,2}", g[1] or ""):
+                    try:
+                        month = int(g[1])
+                        if month > 12:          # pode ser mm/dd — tenta inverter
+                            day, month = month, int(g[0])
+                        else:
+                            day = int(g[0])
+                        year_raw = g[2]
+                        year = int(year_raw) if year_raw else year_now
+                        if year < 100:
+                            year += 2000
+                        found.append(datetime.date(year, month, day))
+                        continue
+                    except Exception:
+                        pass
+
+                # Formato "30 de maio de 2026"
+                if g[0] and g[1] and g[1].lower() in MONTHS_PT:
+                    day   = int(g[0])
+                    month = MONTHS_PT[g[1].lower()]
+                    year_raw = g[2]
+                    year  = int(year_raw) if year_raw else year_now
+                    if year < 100:
+                        year += 2000
+                    found.append(datetime.date(year, month, day))
+                    continue
+
+                # Formato "maio 30, 2026"
+                if g[0] and g[0].lower() in MONTHS_PT:
+                    month = MONTHS_PT[g[0].lower()]
+                    day   = int(g[1])
+                    year_raw = g[2]
+                    year  = int(year_raw) if year_raw else year_now
+                    if year < 100:
+                        year += 2000
+                    found.append(datetime.date(year, month, day))
+                    continue
+
+                # ISO 2026-05-30
+                if g[0] and len(g[0]) == 4:
+                    found.append(datetime.date(int(g[0]), int(g[1]), int(g[2])))
+
+            except Exception:
+                continue
+
+    return found
+
+
+def is_within_window(text: str) -> tuple[bool, str]:
+    """
+    Retorna (dentro_da_janela, data_formatada).
+    Se não encontrar data, considera dentro da janela (não descarta).
+    """
+    dates = extract_dates(text)
+    if not dates:
+        return True, "📅 Data não identificada"
+
+    # Filtra datas plausíveis (não datas no passado distante)
+    future_dates = [d for d in dates if d >= DATE_FROM - datetime.timedelta(days=1)]
+    if not future_dates:
+        return False, ""
+
+    nearest = min(future_dates)
+    if nearest <= DATE_TO:
+        return True, f"📅 {nearest.strftime('%d/%m/%Y')}"
+    return False, ""
+
 # ── Fontes: sites oficiais ────────────────────────────────────────────────────
 EMBASSY_PAGES = [
     {
@@ -172,20 +285,26 @@ def scrape_websites() -> list[dict]:
         if not text:
             continue
         snippets = extract_event_snippets(text)
-        if snippets:
-            for snippet in snippets:
-                events.append({
-                    "source": f"{src['flag']} {src['name']}",
-                    "title": snippet[:180],
-                    "price": classify_price(snippet),
-                    "url": src["url"],
-                    "channel": "🌐 Site oficial",
-                })
-        else:
-            # Mesmo sem evento explícito, registra que o site foi verificado
+        found_any = False
+        for snippet in snippets:
+            within, date_label = is_within_window(snippet)
+            if not within:
+                print(f"    Evento fora da janela (próx. 30 dias) — ignorado")
+                continue
+            found_any = True
             events.append({
                 "source": f"{src['flag']} {src['name']}",
-                "title": "Sem eventos com palavras-chave encontrados — acesse o site para conferir",
+                "title": snippet[:180],
+                "date": date_label,
+                "price": classify_price(snippet),
+                "url": src["url"],
+                "channel": "🌐 Site oficial",
+            })
+        if not found_any and not snippets:
+            events.append({
+                "source": f"{src['flag']} {src['name']}",
+                "title": "Sem eventos identificados — acesse o site para conferir",
+                "date": "—",
                 "price": "❓ Não informado",
                 "url": src["url"],
                 "channel": "🌐 Site oficial",
@@ -226,9 +345,13 @@ def scrape_instagram() -> list[dict]:
                 snippets = extract_event_snippets(caption, max_snippets=2)
                 if snippets:
                     for snippet in snippets:
+                        within, date_label = is_within_window(caption)
+                        if not within:
+                            continue
                         events.append({
                             "source": f"{profile_info['flag']} {profile_info['name']}",
                             "title": snippet[:180],
+                            "date": date_label,
                             "price": classify_price(caption),
                             "url": f"https://www.instagram.com/{username}/",
                             "channel": "📸 Instagram",
@@ -246,13 +369,14 @@ def build_html(web_events: list[dict], ig_events: list[dict]) -> str:
 
     def make_rows(items):
         if not items:
-            return '<tr><td colspan="4" style="padding:16px;text-align:center;color:#888">Nenhum resultado encontrado.</td></tr>'
+            return '<tr><td colspan="5" style="padding:16px;text-align:center;color:#888">Nenhum resultado encontrado para os próximos 30 dias.</td></tr>'
         rows = ""
         for ev in items:
             rows += f"""
             <tr>
               <td style="padding:8px;border-bottom:1px solid #eee">{ev['source']}</td>
               <td style="padding:8px;border-bottom:1px solid #eee">{ev['title']}</td>
+              <td style="padding:8px;border-bottom:1px solid #eee;white-space:nowrap">{ev.get('date','—')}</td>
               <td style="padding:8px;border-bottom:1px solid #eee;white-space:nowrap">{ev['price']}</td>
               <td style="padding:8px;border-bottom:1px solid #eee;font-size:12px">
                 <a href="{ev['url']}">{ev['channel']}</a>
@@ -265,6 +389,7 @@ def build_html(web_events: list[dict], ig_events: list[dict]) -> str:
         <tr style="background:#1a3c6e;color:#fff">
           <th style="padding:10px;text-align:left">Embaixada / Instituto</th>
           <th style="padding:10px;text-align:left">Evento / Descrição</th>
+          <th style="padding:10px;text-align:left">Data</th>
           <th style="padding:10px;text-align:left">Preço</th>
           <th style="padding:10px;text-align:left">Fonte</th>
         </tr>
@@ -279,7 +404,7 @@ def build_html(web_events: list[dict], ig_events: list[dict]) -> str:
 <body style="font-family:Arial,sans-serif;max-width:860px;margin:auto;padding:24px">
 
   <h2 style="color:#1a3c6e">🌍 Eventos Culturais — Embaixadas e Consulados em Brasília</h2>
-  <p style="color:#555">Varredura realizada em <strong>{today}</strong>. Próxima em 5 dias.</p>
+  <p style="color:#555">Varredura realizada em <strong>{today}</strong> — exibindo eventos de <strong>{DATE_FROM.strftime('%d/%m/%Y')}</strong> até <strong>{DATE_TO.strftime('%d/%m/%Y')}</strong>. Próxima em 5 dias.</p>
 
   <h3 style="color:#1a3c6e;margin-top:28px">🌐 Sites Oficiais</h3>
   <table width="100%" cellspacing="0" style="border-collapse:collapse">
