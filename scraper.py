@@ -29,8 +29,8 @@ RSS_FEEDS = [
     {"name":"British Council Brasil",       "flag":"🇬🇧", "url":"https://www.britishcouncil.org.br/feed"},
 ]
 
-# ── Buscas no Brave Search ────────────────────────────────────────────────────
-BRAVE_QUERIES = [
+# ── Buscas no DuckDuckGo (gratuito, sem cadastro) ────────────────────────────
+DDG_QUERIES = [
     "eventos culturais embaixadas Brasília 2026",
     "agenda cultural consulados Brasília junho julho 2026",
     "Instituto Italiano Cultura Brasília eventos 2026",
@@ -151,53 +151,65 @@ def scrape_rss():
             print(f"    Erro RSS: {e}")
     return events
 
-# ── 2. Brave Search API (gratuito — 2.000 buscas/mês) ────────────────────────
-def scrape_brave():
-    api_key = os.getenv("BRAVE_API_KEY")
-    if not api_key:
-        print("  BRAVE_API_KEY não configurado — pulando Brave Search")
-        return []
+# ── 2. DuckDuckGo HTML Search (gratuito, sem cadastro) ───────────────────────
+RESULT_RE = re.compile(
+    r'<a[^>]+class="[^"]*result__a[^"]*"[^>]+href="([^"]+)"[^>]*>(.*?)</a>'
+    r'.*?<a[^>]+class="[^"]*result__snippet[^"]*"[^>]*>(.*?)</a>',
+    re.S,
+)
 
+def scrape_ddg():
     events = []
     seen   = set()
-    d_from = DATE_FROM.strftime("%Y-%m-%d")
-    d_to   = DATE_TO.strftime("%Y-%m-%d")
 
-    for query in BRAVE_QUERIES:
-        print(f"  Brave: {query}")
-        params = urllib.parse.urlencode({
-            "q":      query,
-            "count":  10,
-            "lang":   "pt",
-            "market": "pt-BR",
-        })
-        url = f"https://api.search.brave.com/res/v1/web/search?{params}"
+    for query in DDG_QUERIES:
+        print(f"  DuckDuckGo: {query}")
+        params = urllib.parse.urlencode({"q": query, "kl": "br-pt"})
+        url    = f"https://html.duckduckgo.com/html/?{params}"
         try:
             raw = fetch(url, headers={
-                "Accept":                "application/json",
-                "Accept-Encoding":       "gzip",
-                "X-Subscription-Token":  api_key,
+                "User-Agent":  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+                "Accept":      "text/html",
+                "Referer":     "https://duckduckgo.com/",
             })
             if not raw:
                 continue
-            data = json.loads(raw)
-            for item in data.get("web", {}).get("results", []):
-                link = item.get("url", "")
-                if link in seen:
+
+            # Extrai resultados via regex na página HTML
+            for m in RESULT_RE.finditer(raw):
+                link    = strip_tags(m.group(1)).strip()
+                title   = strip_tags(m.group(2)).strip()
+                snippet = strip_tags(m.group(3)).strip()
+
+                # Remove links de rastreamento do DDG
+                if "duckduckgo.com" in link:
+                    try:
+                        qs   = urllib.parse.urlparse(link).query
+                        link = urllib.parse.parse_qs(qs).get("uddg", [link])[0]
+                    except Exception:
+                        pass
+
+                if link in seen or not title:
                     continue
                 seen.add(link)
-                full = f"{item.get('title','')} {item.get('description','')}"
+
+                full = f"{title} {snippet}"
                 events.append({
-                    "source":  "🔍 Brave Search",
+                    "source":  "🔍 DuckDuckGo",
                     "title":   full[:200],
                     "date":    date_label(full),
                     "price":   classify_price(full),
                     "url":     link,
-                    "channel": "🔍 Brave",
+                    "channel": "🔍 Web",
                 })
-        except Exception as e:
-            print(f"    Erro Brave: {e}")
 
+            import time
+            time.sleep(2)   # pausa entre buscas para não bloquear
+
+        except Exception as e:
+            print(f"    Erro DDG: {e}")
+
+    print(f"    {len(events)} resultado(s)")
     return events
 
 # ── 3. Instagram ──────────────────────────────────────────────────────────────
@@ -275,18 +287,10 @@ def section(title, items):
       {THEAD}<tbody>{make_rows(items)}</tbody>
     </table>"""
 
-def build_html(rss, brave, ig):
+def build_html(rss, ddg, ig):
     today  = TODAY.strftime("%d/%m/%Y")
     d_from = DATE_FROM.strftime("%d/%m/%Y")
     d_to   = DATE_TO.strftime("%d/%m/%Y")
-
-    brave_section = section("🔍 Brave Search — Web", brave) if brave else """
-    <h3 style="color:#1a3c6e;margin-top:28px">🔍 Brave Search — Web</h3>
-    <p style="color:#aaa;font-size:13px;margin:0">
-      <em>Brave Search não configurado. Cadastre-se em
-      <a href="https://api.search.brave.com">api.search.brave.com</a>
-      (gratuito, sem cartão) e adicione o secret <strong>BRAVE_API_KEY</strong> no GitHub.</em>
-    </p>"""
 
     return f"""<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"></head>
 <body style="font-family:Arial,sans-serif;max-width:900px;margin:auto;padding:24px">
@@ -301,7 +305,7 @@ def build_html(rss, brave, ig):
     <a href="https://rotasbrasil.org/rotas-brasil/">rotasbrasil.org — 128 embaixadas em Brasília</a>
   </p>
   {section("📡 RSS — Institutos Culturais", rss)}
-  {brave_section}
+  {section("🔍 DuckDuckGo — Busca Web", ddg)}
   {section("📸 Instagram", ig)}
   <hr style="margin-top:32px">
   <p style="font-size:11px;color:#aaa">
@@ -330,13 +334,13 @@ if __name__ == "__main__":
     print("\n[1/3] RSS feeds...")
     rss = scrape_rss()
     print(f"      {len(rss)} resultado(s)")
-    print("\n[2/3] Brave Search...")
-    brave = scrape_brave()
-    print(f"      {len(brave)} resultado(s)")
+    print("\n[2/3] DuckDuckGo Search...")
+    ddg = scrape_ddg()
+    print(f"      {len(ddg)} resultado(s)")
     print("\n[3/3] Instagram...")
     ig = scrape_instagram()
     print(f"      {len(ig)} resultado(s)")
-    total = len(rss) + len(brave) + len(ig)
+    total = len(rss) + len(ddg) + len(ig)
     print(f"\nTotal: {total}. Enviando e-mail...")
-    html = build_html(rss, brave, ig)
+    html = build_html(rss, ddg, ig)
     send_email(html, total)
