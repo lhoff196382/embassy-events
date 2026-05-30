@@ -110,21 +110,33 @@ def extract_dates(text: str) -> list[datetime.date]:
 def is_within_window(text: str) -> tuple[bool, str]:
     """
     Retorna (dentro_da_janela, data_formatada).
-    Se não encontrar data, considera dentro da janela (não descarta).
+    Regras:
+    - Sem data identificada → inclui (não descarta por dúvida)
+    - Tem data futura dentro de 30 dias → inclui com a data
+    - Tem data futura além de 30 dias → inclui (pode ser divulgação antecipada)
+    - Todas as datas encontradas são claramente no passado (> 2 dias atrás) → descarta
     """
     dates = extract_dates(text)
     if not dates:
         return True, "📅 Data não identificada"
 
-    # Filtra datas plausíveis (não datas no passado distante)
-    future_dates = [d for d in dates if d >= DATE_FROM - datetime.timedelta(days=1)]
+    # Separa datas futuras (a partir de ontem, para não descartar eventos de hoje)
+    cutoff_past = DATE_FROM - datetime.timedelta(days=2)
+    future_dates = [d for d in dates if d >= cutoff_past]
+
+    # Se não há nenhuma data futura → evento já passou → descarta
     if not future_dates:
         return False, ""
 
-    nearest = min(future_dates)
-    if nearest <= DATE_TO:
+    # Pega a data mais próxima dentro da janela de 30 dias
+    window_dates = [d for d in future_dates if d <= DATE_TO]
+    if window_dates:
+        nearest = min(window_dates)
         return True, f"📅 {nearest.strftime('%d/%m/%Y')}"
-    return False, ""
+
+    # Tem data futura mas além de 30 dias → inclui mesmo assim
+    nearest = min(future_dates)
+    return True, f"📅 {nearest.strftime('%d/%m/%Y')} (além de 30 dias)"
 
 # ── Fontes: sites oficiais ────────────────────────────────────────────────────
 EMBASSY_PAGES = [
@@ -300,7 +312,7 @@ def scrape_websites() -> list[dict]:
                 "url": src["url"],
                 "channel": "🌐 Site oficial",
             })
-        if not found_any and not snippets:
+        if not found_any:
             events.append({
                 "source": f"{src['flag']} {src['name']}",
                 "title": "Sem eventos identificados — acesse o site para conferir",
