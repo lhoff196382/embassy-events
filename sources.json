@@ -1,0 +1,45 @@
+{
+  "comment": "Adicione aqui os sites que deseja monitorar. Basta incluir nome, url e flag (emoji do país).",
+  "custom_sites": [
+    {
+      "name": "Embaixada da França — Agenda",
+      "flag": "🇫🇷",
+      "url": "https://br.ambafrance.org/Agenda-cultural"
+    },
+    {
+      "name": "Embaixada do Reino Unido",
+      "flag": "🇬🇧",
+      "url": "https://www.gov.uk/world/organisations/british-embassy-brasilia"
+    },
+    {
+      "name": "Embaixada da Alemanha — Cultura",
+      "flag": "🇩🇪",
+      "url": "https://brasilien.diplo.de/br-pt/themen/kultur"
+    },
+    {
+      "name": "Embaixada da Itália",
+      "flag": "🇮🇹",
+      "url": "https://ambrabrasilia.esteri.it/pt/news/eventi/"
+    },
+    {
+      "name": "Embaixada do Japão",
+      "flag": "🇯🇵",
+      "url": "https://www.br.emb-japan.go.jp/itpr_pt/eventinformation.html"
+    },
+    {
+      "name": "Embaixada dos EUA — Eventos",
+      "flag": "🇺🇸",
+      "url": "https://br.usembassy.gov/pt/eventos/"
+    },
+    {
+      "name": "Embaixada de Portugal",
+      "flag": "🇵🇹",
+      "url": "https://brasilia.embaixadaportugal.mne.gov.pt/pt/noticias-e-agenda/agenda"
+    },
+    {
+      "name": "Embaixada da Espanha",
+      "flag": "🇪🇸",
+      "url": "https://www.exteriores.gob.es/Embajadas/brasilia/pt/Comunicacion/Paginas/Eventos.aspx"
+    }
+  ]
+}

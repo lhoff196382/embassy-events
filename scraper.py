@@ -21,6 +21,19 @@ MONTHS_PT = {
     "mai":5,"jun":6,"jul":7,"ago":8,"set":9,"out":10,"nov":11,"dez":12,
 }
 
+# ── Sites personalizados (sources.json) ──────────────────────────────────────
+def load_custom_sites() -> list[dict]:
+    path = os.path.join(os.path.dirname(__file__), "sources.json")
+    try:
+        with open(path, encoding="utf-8") as f:
+            data = json.load(f)
+        sites = data.get("custom_sites", [])
+        print(f"  sources.json: {len(sites)} site(s) carregado(s)")
+        return sites
+    except Exception as e:
+        print(f"  Erro ao ler sources.json: {e}")
+        return []
+
 # ── RSS Feeds (fontes mais confiáveis) ────────────────────────────────────────
 RSS_FEEDS = [
     {"name":"Goethe-Institut Brasília",     "flag":"🇩🇪", "url":"https://www.goethe.de/ins/br/pt/sta/bra/ver.rss"},
@@ -261,7 +274,94 @@ def scrape_instagram():
 
     return events
 
-# ── 4. Sympla ─────────────────────────────────────────────────────────────────
+# ── 4. Sites personalizados do sources.json ───────────────────────────────────
+EVENT_KEYWORDS_RE = re.compile(
+    r".{0,120}(exposi[çc][ãa]o|concerto|show|palestra|workshop|semin[aá]rio|"
+    r"festival|exibi[çc][ãa]o|cinema|teatro|dan[çc]a|m[úu]sica|cultura|evento|"
+    r"inaugura[çc][ãa]o|leitura|sarau|conferência|confer[eê]ncia|mostra).{0,200}",
+    re.I,
+)
+
+class TextExtractor(HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self._skip = False
+        self.chunks = []
+
+    def handle_starttag(self, tag, attrs):
+        if tag in ("script", "style", "nav", "footer", "head"):
+            self._skip = True
+
+    def handle_endtag(self, tag):
+        if tag in ("script", "style", "nav", "footer", "head"):
+            self._skip = False
+
+    def handle_data(self, data):
+        if not self._skip:
+            t = data.strip()
+            if t:
+                self.chunks.append(t)
+
+    def get_text(self):
+        return " ".join(self.chunks)
+
+def scrape_custom_sites():
+    sites  = load_custom_sites()
+    events = []
+
+    for src in sites:
+        name = src.get("name", "Site")
+        flag = src.get("flag", "🌐")
+        url  = src.get("url", "")
+        if not url:
+            continue
+        print(f"  Site personalizado: {name}")
+        raw = fetch(url)
+        if not raw:
+            events.append({
+                "source":  f"{flag} {name}",
+                "title":   "Não foi possível acessar o site — clique no link para verificar",
+                "date":    "—",
+                "price":   "❓",
+                "url":     url,
+                "channel": "🌐 Site",
+            })
+            continue
+
+        # Extrai texto limpo
+        parser = TextExtractor()
+        parser.feed(raw)
+        text = parser.get_text()
+
+        # Busca trechos com palavras-chave de eventos
+        found = 0
+        for m in EVENT_KEYWORDS_RE.finditer(text):
+            snippet = re.sub(r"\s+", " ", m.group()).strip()
+            events.append({
+                "source":  f"{flag} {name}",
+                "title":   snippet[:200],
+                "date":    date_label(snippet),
+                "price":   classify_price(snippet),
+                "url":     url,
+                "channel": "🌐 Site",
+            })
+            found += 1
+            if found >= 4:
+                break
+
+        if found == 0:
+            events.append({
+                "source":  f"{flag} {name}",
+                "title":   "Nenhum evento identificado no momento — clique para verificar o site",
+                "date":    "—",
+                "price":   "❓",
+                "url":     url,
+                "channel": "🌐 Site",
+            })
+
+    return events
+
+# ── 5. Sympla ─────────────────────────────────────────────────────────────────
 SYMPLA_DATE_RE = re.compile(
     r"(seg|ter|qua|qui|sex|s[áa]b|dom)[^,]*,\s*(\d{1,2})\s+de\s+(\w+)"
     r"(?:\s+de\s+(\d{4}))?(?:\s+[àa]s?\s+(\d{1,2}:\d{2}))?",
@@ -393,7 +493,7 @@ def section(title, items):
       {THEAD}<tbody>{make_rows(items)}</tbody>
     </table>"""
 
-def build_html(rss, ddg, sympla, ig):
+def build_html(rss, custom, sympla, ddg, ig):
     today  = TODAY.strftime("%d/%m/%Y")
     d_from = DATE_FROM.strftime("%d/%m/%Y")
     d_to   = DATE_TO.strftime("%d/%m/%Y")
@@ -411,6 +511,7 @@ def build_html(rss, ddg, sympla, ig):
     <a href="https://rotasbrasil.org/rotas-brasil/">rotasbrasil.org — 128 embaixadas em Brasília</a>
   </p>
   {section("📡 RSS — Institutos Culturais", rss)}
+  {section("🌐 Sites Monitorados (sources.json)", custom)}
   {section("🎟️ Sympla — Eventos em Brasília/DF", sympla)}
   {section("🔍 DuckDuckGo — Busca Web", ddg)}
   {section("📸 Instagram", ig)}
@@ -441,16 +542,19 @@ if __name__ == "__main__":
     print("\n[1/3] RSS feeds...")
     rss = scrape_rss()
     print(f"      {len(rss)} resultado(s)")
-    print("\n[2/3] Sympla...")
+    print("\n[2/5] Sites personalizados (sources.json)...")
+    custom = scrape_custom_sites()
+    print(f"      {len(custom)} resultado(s)")
+    print("\n[3/5] Sympla...")
     sympla = scrape_sympla()
     print(f"      {len(sympla)} resultado(s)")
-    print("\n[3/4] DuckDuckGo Search...")
+    print("\n[4/5] DuckDuckGo Search...")
     ddg = scrape_ddg()
     print(f"      {len(ddg)} resultado(s)")
-    print("\n[4/4] Instagram...")
+    print("\n[5/5] Instagram...")
     ig = scrape_instagram()
     print(f"      {len(ig)} resultado(s)")
-    total = len(rss) + len(sympla) + len(ddg) + len(ig)
+    total = len(rss) + len(custom) + len(sympla) + len(ddg) + len(ig)
     print(f"\nTotal: {total}. Enviando e-mail...")
-    html = build_html(rss, ddg, sympla, ig)
+    html = build_html(rss, custom, sympla, ddg, ig)
     send_email(html, total)
