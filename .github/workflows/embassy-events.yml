@@ -1,0 +1,29 @@
+name: Embassy Cultural Events — Brasília
+
+on:
+  schedule:
+    # Roda a cada 5 dias: dias 1, 6, 11, 16, 21, 26 do mês às 08:00 BRT (11:00 UTC)
+    - cron: "0 11 1,6,11,16,21,26 * *"
+  workflow_dispatch:  # permite disparar manualmente pelo GitHub
+
+jobs:
+  scrape-and-notify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run scraper & send e-mail
+        env:
+          GMAIL_USER:         ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          EMAIL_TO:           ${{ secrets.EMAIL_TO }}
+          SERPAPI_KEY:        ${{ secrets.SERPAPI_KEY }}   # opcional — melhora resultados
+        run: python scraper.py
