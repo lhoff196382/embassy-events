@@ -1,0 +1,102 @@
+name: Adicionar site via Issue
+
+on:
+  issues:
+    types: [opened, reopened]
+
+jobs:
+  add-site:
+    if: contains(github.event.issue.labels.*.name, 'add-site')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Processar issue e atualizar sources.json
+        env:
+          ISSUE_BODY: ${{ github.event.issue.body }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          python - <<'EOF'
+          import os, json, re
+
+          body = os.environ["ISSUE_BODY"]
+
+          def extract(label):
+              pattern = rf"### {label}\s*\n+([^\n#]+)"
+              m = re.search(pattern, body, re.IGNORECASE)
+              return m.group(1).strip() if m else ""
+
+          name     = extract("Nome do site")
+          url      = extract("URL da página de eventos")
+          category = extract("Categoria")
+          flag     = extract("Emoji da bandeira.*?")
+
+          if not flag or flag.lower() in ("_no response_", ""):
+              # Tenta adivinhar a bandeira pela categoria
+              flag = "🌐"
+
+          if not name or not url:
+              print("ERRO: nome ou URL não encontrados na issue")
+              exit(1)
+
+          if not url.startswith("http"):
+              print("ERRO: URL inválida")
+              exit(1)
+
+          path = "sources.json"
+          with open(path, encoding="utf-8") as f:
+              data = json.load(f)
+
+          # Evita duplicata
+          existing_urls = [s.get("url","") for s in data.get("custom_sites", [])]
+          if url in existing_urls:
+              print(f"Site já cadastrado: {url}")
+              exit(0)
+
+          data["custom_sites"].append({
+              "name":     name,
+              "flag":     flag,
+              "url":      url,
+              "category": category,
+          })
+
+          with open(path, "w", encoding="utf-8") as f:
+              json.dump(data, f, ensure_ascii=False, indent=2)
+
+          print(f"Adicionado: {name} ({category}) — {url}")
+          EOF
+
+      - name: Commit e push
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add sources.json
+          git diff --cached --quiet || git commit -m "feat: adiciona site via issue #${{ github.event.issue.number }} — ${{ github.event.issue.title }}"
+          git push
+
+      - name: Comentar na issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              owner:      context.repo.owner,
+              repo:       context.repo.repo,
+              issue_number: context.issue.number,
+              body: "✅ **Site adicionado com sucesso!**\n\nO `sources.json` foi atualizado. O site será monitorado na próxima varredura (a cada 5 dias) ou você pode disparar manualmente em **Actions → Embassy Cultural Events → Run workflow**."
+            });
+            github.rest.issues.update({
+              owner:      context.repo.owner,
+              repo:       context.repo.repo,
+              issue_number: context.issue.number,
+              state: "closed"
+            });

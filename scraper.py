@@ -324,7 +324,7 @@ def scrape_custom_sites():
                 "date":    "—",
                 "price":   "❓",
                 "url":     url,
-                "channel": "🌐 Site",
+                "channel": src.get("category", "🌐 Site"),
             })
             continue
 
@@ -343,7 +343,7 @@ def scrape_custom_sites():
                 "date":    date_label(snippet),
                 "price":   classify_price(snippet),
                 "url":     url,
-                "channel": "🌐 Site",
+                "channel": src.get("category", "🌐 Site"),
             })
             found += 1
             if found >= 4:
@@ -356,7 +356,7 @@ def scrape_custom_sites():
                 "date":    "—",
                 "price":   "❓",
                 "url":     url,
-                "channel": "🌐 Site",
+                "channel": src.get("category", "🌐 Site"),
             })
 
     return events

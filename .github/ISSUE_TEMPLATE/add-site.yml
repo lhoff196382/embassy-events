@@ -1,0 +1,47 @@
+name: "➕ Adicionar site para monitorar"
+description: "Cadastre um novo site para ser incluído no monitoramento de eventos"
+title: "[NOVO SITE] "
+labels: ["add-site"]
+
+body:
+  - type: input
+    id: name
+    attributes:
+      label: "Nome do site"
+      description: "Nome que vai aparecer no e-mail"
+      placeholder: "Ex: Embaixada do Canadá"
+    validations:
+      required: true
+
+  - type: input
+    id: url
+    attributes:
+      label: "URL da página de eventos"
+      description: "Endereço completo da página (com https://)"
+      placeholder: "Ex: https://www.canadainternational.gc.ca/brazil-bresil/events.aspx"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: "Categoria"
+      description: "Tipo do site"
+      options:
+        - "🏛️ Embaixada"
+        - "🎭 Instituto Cultural"
+        - "🎪 Site de Eventos"
+        - "📰 Portal de Notícias"
+        - "🏛️ Órgão Público"
+        - "🌐 Outro"
+    validations:
+      required: true
+
+  - type: input
+    id: flag
+    attributes:
+      label: "Emoji da bandeira (opcional)"
+      description: "Emoji do país. Deixe em branco para usar 🌐"
+      placeholder: "Ex: 🇨🇦"
+    validations:
+      required: false
