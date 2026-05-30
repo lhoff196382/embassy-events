@@ -1,6 +1,7 @@
 """
 Embassy Cultural Events Scraper — Brasília
-Fontes: RSS feeds dos institutos culturais + Bing Search + Instagram
+Fontes: RSS feeds + Brave Search API + Instagram
+Diretório de embaixadas: https://rotasbrasil.org/rotas-brasil/
 """
 
 import os, re, json, datetime, smtplib, urllib.request, urllib.parse, xml.etree.ElementTree as ET
@@ -20,7 +21,7 @@ MONTHS_PT = {
     "mai":5,"jun":6,"jul":7,"ago":8,"set":9,"out":10,"nov":11,"dez":12,
 }
 
-# ── RSS Feeds dos institutos culturais ───────────────────────────────────────
+# ── RSS Feeds (fontes mais confiáveis) ────────────────────────────────────────
 RSS_FEEDS = [
     {"name":"Goethe-Institut Brasília",     "flag":"🇩🇪", "url":"https://www.goethe.de/ins/br/pt/sta/bra/ver.rss"},
     {"name":"Institut Français Brasília",   "flag":"🇫🇷", "url":"https://www.institutfrancais.com.br/brasilia/agenda/feed"},
@@ -28,14 +29,14 @@ RSS_FEEDS = [
     {"name":"British Council Brasil",       "flag":"🇬🇧", "url":"https://www.britishcouncil.org.br/feed"},
 ]
 
-# ── Buscas no Bing ────────────────────────────────────────────────────────────
-BING_QUERIES = [
+# ── Buscas no Brave Search ────────────────────────────────────────────────────
+BRAVE_QUERIES = [
     "eventos culturais embaixadas Brasília 2026",
     "agenda cultural consulados Brasília junho julho 2026",
     "Instituto Italiano Cultura Brasília eventos 2026",
-    "Embaixada Japão eventos culturais Brasília 2026",
-    "Embaixada EUA eventos culturais Brasília 2026",
-    "Embaixada França Alemanha Brasília eventos 2026",
+    "Goethe-Institut Brasília eventos agenda 2026",
+    "Institut Français Brasília agenda 2026",
+    "Embaixada Japão EUA eventos culturais Brasília 2026",
 ]
 
 # ── Perfis Instagram ──────────────────────────────────────────────────────────
@@ -76,13 +77,13 @@ def extract_dates(text):
         for m in pat.finditer(text):
             g = m.groups()
             try:
-                if len(g) >= 3 and g[0] and len(g[0]) == 4:          # ISO
+                if len(g) >= 3 and g[0] and len(g[0]) == 4:
                     found.append(datetime.date(int(g[0]), int(g[1]), int(g[2])))
-                elif g[1] and g[1].lower() in MONTHS_PT:               # "30 de maio"
+                elif g[1] and g[1].lower() in MONTHS_PT:
                     yr = int(g[2]) if g[2] else y
                     if yr < 100: yr += 2000
                     found.append(datetime.date(yr, MONTHS_PT[g[1].lower()], int(g[0])))
-                else:                                                   # dd/mm/yyyy
+                else:
                     mo = int(g[1]); dy = int(g[0])
                     if mo > 12: mo, dy = dy, mo
                     yr = int(g[2]) if g[2] else y
@@ -96,23 +97,24 @@ def date_label(text):
     dates = extract_dates(text)
     future = [d for d in dates if d >= DATE_FROM - datetime.timedelta(days=1)]
     if not future: return "📅 A confirmar"
-    nearest = min(future)
-    return f"📅 {nearest.strftime('%d/%m/%Y')}"
+    return f"📅 {min(future).strftime('%d/%m/%Y')}"
 
 # ── HTTP helper ───────────────────────────────────────────────────────────────
-def fetch(url, timeout=15):
-    headers = {"User-Agent":"Mozilla/5.0","Accept-Language":"pt-BR,pt;q=0.9"}
+def fetch(url, timeout=15, headers=None):
+    h = {"User-Agent": "Mozilla/5.0", "Accept-Language": "pt-BR,pt;q=0.9"}
+    if headers:
+        h.update(headers)
     try:
-        req = urllib.request.Request(url, headers=headers)
+        req = urllib.request.Request(url, headers=h)
         with urllib.request.urlopen(req, timeout=timeout) as r:
             return r.read().decode("utf-8", errors="ignore")
     except Exception as e:
         print(f"  Erro {url}: {e}")
         return ""
 
-# ── Strip HTML tags ───────────────────────────────────────────────────────────
 TAG_RE = re.compile(r"<[^>]+>")
-def strip_tags(html): return re.sub(r"\s+", " ", TAG_RE.sub(" ", html)).strip()
+def strip_tags(html):
+    return re.sub(r"\s+", " ", TAG_RE.sub(" ", html)).strip()
 
 # ── 1. RSS Feeds ──────────────────────────────────────────────────────────────
 def scrape_rss():
@@ -124,68 +126,78 @@ def scrape_rss():
             continue
         try:
             root = ET.fromstring(raw)
-            ns = {"atom": "http://www.w3.org/2005/Atom"}
-            # Suporta RSS 2.0 e Atom
+            ns   = {"atom": "http://www.w3.org/2005/Atom"}
             items = root.findall(".//item") or root.findall(".//atom:entry", ns)
             found = 0
             for item in items:
-                title = strip_tags((item.findtext("title") or item.findtext("atom:title", namespaces=ns) or "").strip())
-                desc  = strip_tags((item.findtext("description") or item.findtext("atom:summary", namespaces=ns) or "").strip())
-                link  = (item.findtext("link") or item.findtext("atom:link", namespaces=ns) or src["url"]).strip()
+                title = strip_tags(item.findtext("title") or item.findtext("atom:title", namespaces=ns) or "")
+                desc  = strip_tags(item.findtext("description") or item.findtext("atom:summary", namespaces=ns) or "")
+                link  = (item.findtext("link") or src["url"]).strip()
                 pub   = item.findtext("pubDate") or item.findtext("atom:published", namespaces=ns) or ""
                 full  = f"{title} {desc} {pub}"
-                dl    = date_label(full)
                 events.append({
-                    "source": f"{src['flag']} {src['name']}",
-                    "title":  title[:200] if title else desc[:200],
-                    "date":   dl,
-                    "price":  classify_price(full),
-                    "url":    link,
-                    "channel":"📡 RSS",
+                    "source":  f"{src['flag']} {src['name']}",
+                    "title":   title[:200] or desc[:200],
+                    "date":    date_label(full),
+                    "price":   classify_price(full),
+                    "url":     link,
+                    "channel": "📡 RSS",
                 })
                 found += 1
                 if found >= 5:
                     break
-            print(f"    {found} item(s) encontrado(s)")
+            print(f"    {found} item(s)")
         except Exception as e:
-            print(f"    Erro ao parsear RSS: {e}")
+            print(f"    Erro RSS: {e}")
     return events
 
-# ── 2. Bing Search API ────────────────────────────────────────────────────────
-def scrape_bing():
-    api_key = os.getenv("BING_API_KEY")
+# ── 2. Brave Search API (gratuito — 2.000 buscas/mês) ────────────────────────
+def scrape_brave():
+    api_key = os.getenv("BRAVE_API_KEY")
     if not api_key:
-        print("  BING_API_KEY não configurado — pulando Bing Search")
+        print("  BRAVE_API_KEY não configurado — pulando Brave Search")
         return []
 
     events = []
-    seen = set()
-    for query in BING_QUERIES:
-        print(f"  Bing: {query}")
+    seen   = set()
+    d_from = DATE_FROM.strftime("%Y-%m-%d")
+    d_to   = DATE_TO.strftime("%Y-%m-%d")
+
+    for query in BRAVE_QUERIES:
+        print(f"  Brave: {query}")
         params = urllib.parse.urlencode({
-            "q": query, "mkt": "pt-BR", "count": "10",
-            "freshness": f"{DATE_FROM.strftime('%Y-%m-%d')}..{DATE_TO.strftime('%Y-%m-%d')}",
+            "q":      query,
+            "count":  10,
+            "lang":   "pt",
+            "market": "pt-BR",
         })
-        url = f"https://api.bing.microsoft.com/v7.0/search?{params}"
+        url = f"https://api.search.brave.com/res/v1/web/search?{params}"
         try:
-            req = urllib.request.Request(url, headers={"Ocp-Apim-Subscription-Key": api_key})
-            with urllib.request.urlopen(req, timeout=15) as r:
-                data = json.loads(r.read())
-            for item in data.get("webPages", {}).get("value", []):
-                link = item.get("url","")
-                if link in seen: continue
+            raw = fetch(url, headers={
+                "Accept":                "application/json",
+                "Accept-Encoding":       "gzip",
+                "X-Subscription-Token":  api_key,
+            })
+            if not raw:
+                continue
+            data = json.loads(raw)
+            for item in data.get("web", {}).get("results", []):
+                link = item.get("url", "")
+                if link in seen:
+                    continue
                 seen.add(link)
-                full = f"{item.get('name','')} {item.get('snippet','')}"
+                full = f"{item.get('title','')} {item.get('description','')}"
                 events.append({
-                    "source": "🔍 Bing Search",
-                    "title":  full[:200],
-                    "date":   date_label(full),
-                    "price":  classify_price(full),
-                    "url":    link,
-                    "channel":"🔍 Bing",
+                    "source":  "🔍 Brave Search",
+                    "title":   full[:200],
+                    "date":    date_label(full),
+                    "price":   classify_price(full),
+                    "url":     link,
+                    "channel": "🔍 Brave",
                 })
         except Exception as e:
-            print(f"    Erro Bing: {e}")
+            print(f"    Erro Brave: {e}")
+
     return events
 
 # ── 3. Instagram ──────────────────────────────────────────────────────────────
@@ -227,12 +239,21 @@ def scrape_instagram():
                         "url":     f"https://www.instagram.com/{p['user']}/",
                         "channel": "📸 Instagram",
                     })
-                    break  # 1 evento por post
+                    break
         except Exception as e:
             print(f"    Erro @{p['user']}: {e}")
+
     return events
 
 # ── E-mail ────────────────────────────────────────────────────────────────────
+THEAD = """<thead><tr style="background:#1a3c6e;color:#fff">
+  <th style="padding:10px;text-align:left">Instituto / Embaixada</th>
+  <th style="padding:10px;text-align:left">Evento</th>
+  <th style="padding:10px;text-align:left">Data</th>
+  <th style="padding:10px;text-align:left">Preço</th>
+  <th style="padding:10px;text-align:left">Fonte</th>
+</tr></thead>"""
+
 def make_rows(items):
     if not items:
         return '<tr><td colspan="5" style="padding:16px;text-align:center;color:#888">Nenhum resultado encontrado.</td></tr>'
@@ -247,44 +268,45 @@ def make_rows(items):
             <a href="{ev['url']}">{ev['channel']}</a></td></tr>"""
     return rows
 
-THEAD = """<thead><tr style="background:#1a3c6e;color:#fff">
-  <th style="padding:10px;text-align:left">Instituto / Embaixada</th>
-  <th style="padding:10px;text-align:left">Evento</th>
-  <th style="padding:10px;text-align:left">Data</th>
-  <th style="padding:10px;text-align:left">Preço</th>
-  <th style="padding:10px;text-align:left">Fonte</th>
-</tr></thead>"""
+def section(title, items):
+    return f"""
+    <h3 style="color:#1a3c6e;margin-top:28px">{title}</h3>
+    <table width="100%" cellspacing="0" style="border-collapse:collapse">
+      {THEAD}<tbody>{make_rows(items)}</tbody>
+    </table>"""
 
-def build_html(rss, bing, ig):
-    today = TODAY.strftime("%d/%m/%Y")
+def build_html(rss, brave, ig):
+    today  = TODAY.strftime("%d/%m/%Y")
     d_from = DATE_FROM.strftime("%d/%m/%Y")
     d_to   = DATE_TO.strftime("%d/%m/%Y")
 
-    def section(title, items):
-        return f"""
-        <h3 style="color:#1a3c6e;margin-top:28px">{title}</h3>
-        <table width="100%" cellspacing="0" style="border-collapse:collapse">
-          {THEAD}<tbody>{make_rows(items)}</tbody>
-        </table>"""
-
-    bing_section = section("🔍 Bing Search", bing) if bing else (
-        '<p style="color:#aaa;font-size:13px">🔍 <em>Bing Search não configurado. '
-        'Veja o README para ativar (gratuito).</em></p>'
-    )
+    brave_section = section("🔍 Brave Search — Web", brave) if brave else """
+    <h3 style="color:#1a3c6e;margin-top:28px">🔍 Brave Search — Web</h3>
+    <p style="color:#aaa;font-size:13px;margin:0">
+      <em>Brave Search não configurado. Cadastre-se em
+      <a href="https://api.search.brave.com">api.search.brave.com</a>
+      (gratuito, sem cartão) e adicione o secret <strong>BRAVE_API_KEY</strong> no GitHub.</em>
+    </p>"""
 
     return f"""<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"></head>
 <body style="font-family:Arial,sans-serif;max-width:900px;margin:auto;padding:24px">
   <h2 style="color:#1a3c6e">🌍 Eventos Culturais — Embaixadas e Consulados em Brasília</h2>
-  <p style="color:#555">Varredura em <strong>{today}</strong> —
-     eventos de <strong>{d_from}</strong> até <strong>{d_to}</strong>.
-     Próxima em 5 dias.</p>
+  <p style="color:#555">
+    Varredura em <strong>{today}</strong> —
+    eventos de <strong>{d_from}</strong> até <strong>{d_to}</strong>.
+    Próxima em 5 dias.
+  </p>
+  <p style="font-size:12px;color:#888">
+    📋 Diretório de referência:
+    <a href="https://rotasbrasil.org/rotas-brasil/">rotasbrasil.org — 128 embaixadas em Brasília</a>
+  </p>
   {section("📡 RSS — Institutos Culturais", rss)}
-  {bing_section}
+  {brave_section}
   {section("📸 Instagram", ig)}
   <hr style="margin-top:32px">
   <p style="font-size:11px;color:#aaa">
-    Fontes: Goethe-Institut, Institut Français, Instituto Cervantes, British Council,
-    Instituto Italiano, Embaixadas dos EUA, Japão, França, Alemanha e Reino Unido — Brasília/DF.
+    Fontes: Goethe-Institut · Institut Français · Instituto Cervantes · British Council ·
+    Instituto Italiano · Embaixadas dos EUA · Japão · França · Alemanha · Reino Unido — Brasília/DF
   </p>
 </body></html>"""
 
@@ -293,7 +315,7 @@ def send_email(html, total):
     password  = os.environ["GMAIL_APP_PASSWORD"]
     recipient = os.environ.get("EMAIL_TO", sender)
     msg = MIMEMultipart("alternative")
-    msg["Subject"] = f"🌍 Eventos Culturais Embaixadas Brasília — {TODAY.strftime('%d/%m/%Y')} ({total} resultado(s))"
+    msg["Subject"] = f"🌍 Eventos Embaixadas Brasília — {TODAY.strftime('%d/%m/%Y')} ({total} resultado(s))"
     msg["From"]    = sender
     msg["To"]      = recipient
     msg.attach(MIMEText(html, "html", "utf-8"))
@@ -308,13 +330,13 @@ if __name__ == "__main__":
     print("\n[1/3] RSS feeds...")
     rss = scrape_rss()
     print(f"      {len(rss)} resultado(s)")
-    print("\n[2/3] Bing Search...")
-    bing = scrape_bing()
-    print(f"      {len(bing)} resultado(s)")
+    print("\n[2/3] Brave Search...")
+    brave = scrape_brave()
+    print(f"      {len(brave)} resultado(s)")
     print("\n[3/3] Instagram...")
     ig = scrape_instagram()
     print(f"      {len(ig)} resultado(s)")
-    total = len(rss) + len(bing) + len(ig)
+    total = len(rss) + len(brave) + len(ig)
     print(f"\nTotal: {total}. Enviando e-mail...")
-    html = build_html(rss, bing, ig)
+    html = build_html(rss, brave, ig)
     send_email(html, total)
