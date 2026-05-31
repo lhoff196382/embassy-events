@@ -150,6 +150,27 @@ def date_label(text):
     if not future: return "📅 A confirmar"
     return f"📅 {min(future).strftime('%d/%m/%Y')}"
 
+def is_past_event(event: dict) -> bool:
+    """Retorna True se o evento tem data identificada E ela já passou."""
+    label = event.get("date", "")
+    # Tenta extrair data do label "📅 dd/mm/yyyy"
+    m = re.search(r"(\d{2})/(\d{2})/(\d{4})", label)
+    if not m:
+        return False  # sem data clara → não descarta
+    try:
+        d = datetime.date(int(m.group(3)), int(m.group(2)), int(m.group(1)))
+        return d < TODAY
+    except Exception:
+        return False
+
+def filter_future_events(events: list) -> list:
+    """Remove eventos com data claramente no passado."""
+    filtered = [e for e in events if not is_past_event(e)]
+    removed = len(events) - len(filtered)
+    if removed:
+        print(f"  Removidos {removed} evento(s) com data no passado.")
+    return filtered
+
 # ── HTTP helper ───────────────────────────────────────────────────────────────
 def fetch(url, timeout=15, headers=None):
     h = {"User-Agent": "Mozilla/5.0", "Accept-Language": "pt-BR,pt;q=0.9"}
@@ -612,6 +633,12 @@ if __name__ == "__main__":
     print("\n[5/5] Instagram...")
     ig = scrape_instagram()
     print(f"      {len(ig)} resultado(s)")
+
+    print("\nFiltrando eventos passados...")
+    rss    = filter_future_events(rss)
+    custom = filter_future_events(custom)
+    ddg    = filter_future_events(ddg)
+    ig     = filter_future_events(ig)
 
     total = len(rss) + len(custom) + len(sympla) + len(ddg) + len(ig)
     print(f"\nTotal: {total}. Enviando e-mail...")
