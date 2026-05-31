@@ -66,6 +66,12 @@
       "flag": "BR",
       "url": "https://brasilia.deboa.com/assunto/agenda-cultural-de-brasilia-2026/",
       "category": "Site de Eventos"
+    },
+    {
+      "name": "Embaixada da China",
+      "flag": "🌐",
+      "url": "https://br.china-embassy.gov.cn/por/sghds/",
+      "category": "Embaixada"
     }
   ]
 }
