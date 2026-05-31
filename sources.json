@@ -63,9 +63,15 @@
     },
     {
       "name": "Embaixada da China",
-      "flag": "ð",
+      "flag": "Ã°ÂÂÂ",
       "url": "https://br.china-embassy.gov.cn/por/sghds/",
       "category": "Embaixada"
+    },
+    {
+      "name": "Teatro Poupex",
+      "flag": "🌐",
+      "url": "https://www.poupex.com.br/esg/poupex-cultural/",
+      "category": "Instituto Cultural"
     }
   ]
 }
