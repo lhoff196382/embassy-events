@@ -63,14 +63,20 @@
     },
     {
       "name": "Embaixada da China",
-      "flag": "Ã°ÂÂÂ",
+      "flag": "ÃÂ°ÃÂÃÂÃÂ",
       "url": "https://br.china-embassy.gov.cn/por/sghds/",
       "category": "Embaixada"
     },
     {
       "name": "Teatro Poupex",
-      "flag": "🌐",
+      "flag": "ð",
       "url": "https://www.poupex.com.br/esg/poupex-cultural/",
+      "category": "Instituto Cultural"
+    },
+    {
+      "name": "Caixa Cultural",
+      "flag": "🌐",
+      "url": "https://www.caixacultural.gov.br/Paginas/Brasilia.aspx",
       "category": "Instituto Cultural"
     }
   ]
