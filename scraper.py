@@ -21,6 +21,40 @@ MONTHS_PT = {
     "mai":5,"jun":6,"jul":7,"ago":8,"set":9,"out":10,"nov":11,"dez":12,
 }
 
+# ── Config (config.json) ─────────────────────────────────────────────────────
+def load_config() -> dict:
+    path = os.path.join(os.path.dirname(__file__), "config.json")
+    defaults = {"city": "Brasília", "state": "DF", "frequency_days": 5, "last_run": ""}
+    try:
+        with open(path, encoding="utf-8") as f:
+            cfg = json.load(f)
+        return {**defaults, **cfg}
+    except Exception as e:
+        print(f"  Erro ao ler config.json: {e} — usando padrões")
+        return defaults
+
+def should_run(cfg: dict) -> bool:
+    """Verifica se hoje é dia de rodar baseado na frequência configurada."""
+    last = cfg.get("last_run", "")
+    freq = int(cfg.get("frequency_days", 5))
+    if not last:
+        return True
+    try:
+        last_date = datetime.date.fromisoformat(last)
+        return (TODAY - last_date).days >= freq
+    except Exception:
+        return True
+
+def save_last_run(cfg: dict):
+    """Atualiza last_run no config.json após envio bem-sucedido."""
+    path = os.path.join(os.path.dirname(__file__), "config.json")
+    cfg["last_run"] = TODAY.isoformat()
+    try:
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(cfg, f, ensure_ascii=False, indent=2)
+    except Exception as e:
+        print(f"  Aviso: não foi possível salvar last_run: {e}")
+
 # ── Sites personalizados (sources.json) ──────────────────────────────────────
 def load_custom_sites() -> list[dict]:
     path = os.path.join(os.path.dirname(__file__), "sources.json")
@@ -538,8 +572,36 @@ def send_email(html, total):
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
+    # ── Carrega configurações ─────────────────────────────────────────────────
+    cfg  = load_config()
+    city = cfg.get("city", "Brasília")
+    state= cfg.get("state", "DF")
+    freq = int(cfg.get("frequency_days", 5))
+
     print(f"=== Embassy Events — {TODAY} até {DATE_TO} ===")
-    print("\n[1/3] RSS feeds...")
+    print(f"    Cidade: {city}/{state} | Frequência: a cada {freq} dias")
+
+    # ── Verifica se é dia de rodar ────────────────────────────────────────────
+    if not should_run(cfg):
+        last = cfg.get("last_run","")
+        print(f"    Última execução: {last}. Ainda não atingiu {freq} dias. Encerrando.")
+        exit(0)
+
+    # ── Atualiza queries com a cidade configurada ─────────────────────────────
+    global DDG_QUERIES, SYMPLA_API
+    DDG_QUERIES = [
+        f"eventos culturais embaixadas {city} {TODAY.year}",
+        f"agenda cultural consulados {city} {TODAY.year}",
+        f"Instituto Cultural {city} eventos {TODAY.year}",
+        f"Goethe-Institut Institut Français Cervantes {city} eventos {TODAY.year}",
+        f"Embaixada eventos culturais {city} {TODAY.year}",
+    ]
+    SYMPLA_API = (
+        f"https://www.sympla.com.br/api/public/v1/events"
+        f"?page=1&page_size=20&state={state}&city={city}&od=date"
+    )
+
+    print("\n[1/5] RSS feeds...")
     rss = scrape_rss()
     print(f"      {len(rss)} resultado(s)")
     print("\n[2/5] Sites personalizados (sources.json)...")
@@ -554,7 +616,11 @@ if __name__ == "__main__":
     print("\n[5/5] Instagram...")
     ig = scrape_instagram()
     print(f"      {len(ig)} resultado(s)")
+
     total = len(rss) + len(custom) + len(sympla) + len(ddg) + len(ig)
     print(f"\nTotal: {total}. Enviando e-mail...")
     html = build_html(rss, custom, sympla, ddg, ig)
     send_email(html, total)
+
+    # ── Salva data de execução ────────────────────────────────────────────────
+    save_last_run(cfg)

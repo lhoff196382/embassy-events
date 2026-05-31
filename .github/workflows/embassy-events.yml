@@ -2,14 +2,16 @@ name: Embassy Cultural Events — Brasília
 
 on:
   schedule:
-    # Roda a cada 5 dias: dias 1, 6, 11, 16, 21, 26 do mês às 08:00 BRT (11:00 UTC)
-    - cron: "0 11 1,6,11,16,21,26 * *"
+    # Roda todo dia às 08:00 BRT (11:00 UTC) — Python decide se envia baseado em frequency_days
+    - cron: "0 11 * * *"
   workflow_dispatch:  # permite disparar manualmente
 
 jobs:
   scrape-and-notify:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout
@@ -29,3 +31,11 @@ jobs:
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
           EMAIL_TO:           ${{ secrets.EMAIL_TO }}
         run: python scraper.py
+
+      - name: Salva data de execução no repositório
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add config.json
+          git diff --cached --quiet || git commit -m "chore: atualiza last_run [skip ci]"
+          git push

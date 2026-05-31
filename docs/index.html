@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>🌍 Embassy Events — Painel</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Arial, sans-serif; background: #f0f2f5; color: #222; }
+    header { background: #1a3c6e; color: #fff; padding: 20px 32px; display: flex; align-items: center; gap: 12px; }
+    header h1 { font-size: 1.4rem; }
+    header span { font-size: 1.8rem; }
+    main { max-width: 960px; margin: 32px auto; padding: 0 16px; display: flex; flex-direction: column; gap: 24px; }
+
+    .card { background: #fff; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,.08); padding: 24px; }
+    .card h2 { font-size: 1.1rem; color: #1a3c6e; margin-bottom: 16px; border-bottom: 2px solid #e8eef6; padding-bottom: 8px; }
+
+    .form-row { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+    .form-group { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 160px; }
+    label { font-size: 0.82rem; font-weight: bold; color: #555; }
+    input, select { padding: 8px 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 0.95rem; }
+    input:focus, select:focus { outline: none; border-color: #1a3c6e; }
+
+    .btn { padding: 9px 20px; border: none; border-radius: 6px; cursor: pointer; font-size: 0.9rem; font-weight: bold; }
+    .btn-primary { background: #1a3c6e; color: #fff; }
+    .btn-primary:hover { background: #14305a; }
+    .btn-danger  { background: #fff; color: #c0392b; border: 1px solid #c0392b; }
+    .btn-danger:hover  { background: #fdf0ef; }
+    .btn-success { background: #27ae60; color: #fff; }
+    .btn-success:hover { background: #1e8449; }
+    .btn:disabled { opacity: .5; cursor: not-allowed; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+    th { text-align: left; padding: 9px 10px; background: #1a3c6e; color: #fff; }
+    td { padding: 9px 10px; border-bottom: 1px solid #eee; vertical-align: middle; }
+    tr:hover td { background: #f7f9fc; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; background: #e8eef6; color: #1a3c6e; }
+
+    #toast { position: fixed; bottom: 24px; right: 24px; background: #27ae60; color: #fff;
+             padding: 12px 20px; border-radius: 8px; font-size: 0.9rem;
+             display: none; box-shadow: 0 4px 12px rgba(0,0,0,.2); z-index: 999; }
+    #toast.error { background: #c0392b; }
+
+    .token-box { background: #fffbe6; border: 1px solid #f0c040; border-radius: 8px; padding: 14px 18px; font-size: 0.88rem; }
+    .token-box a { color: #1a3c6e; }
+    #tokenInput { font-family: monospace; letter-spacing: 1px; }
+
+    .empty { text-align: center; color: #aaa; padding: 24px; font-style: italic; }
+  </style>
+</head>
+<body>
+
+<header>
+  <span>🌍</span>
+  <div>
+    <h1>Embassy Events — Painel de Controle</h1>
+    <small style="opacity:.8">Gerenciamento de monitoramento de eventos culturais em Brasília</small>
+  </div>
+</header>
+
+<main>
+
+  <!-- TOKEN -->
+  <div class="card">
+    <h2>🔑 Autenticação GitHub</h2>
+    <div class="token-box" id="tokenInfo">
+      Para salvar alterações você precisa de um <strong>Token do GitHub</strong>.<br>
+      <a href="https://github.com/settings/tokens/new?description=EmbassyEvents&scopes=repo" target="_blank">
+        Clique aqui para gerar um token gratuito
+      </a> — marque apenas a permissão <strong>repo</strong> e clique em <em>Generate token</em>.
+    </div>
+    <div class="form-row" style="margin-top:12px">
+      <div class="form-group" style="flex:3">
+        <label>Token GitHub (fica salvo só no seu navegador)</label>
+        <input type="password" id="tokenInput" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx">
+      </div>
+      <div class="form-group" style="justify-content:flex-end">
+        <label>&nbsp;</label>
+        <button class="btn btn-primary" onclick="saveToken()">Salvar token</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONFIGURAÇÕES -->
+  <div class="card">
+    <h2>⚙️ Configurações</h2>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Cidade monitorada</label>
+        <input type="text" id="cfgCity" placeholder="Ex: Brasília">
+      </div>
+      <div class="form-group">
+        <label>Estado (sigla)</label>
+        <input type="text" id="cfgState" placeholder="Ex: DF" maxlength="2" style="max-width:100px">
+      </div>
+      <div class="form-group">
+        <label>Frequência (dias entre envios)</label>
+        <input type="number" id="cfgFreq" min="1" max="30" placeholder="5" style="max-width:120px">
+      </div>
+      <div class="form-group" style="justify-content:flex-end">
+        <label>&nbsp;</label>
+        <button class="btn btn-primary" onclick="saveConfig()">💾 Salvar configurações</button>
+      </div>
+    </div>
+    <small style="color:#888">Última execução: <span id="lastRun">—</span></small>
+  </div>
+
+  <!-- SITES MONITORADOS -->
+  <div class="card">
+    <h2>🌐 Sites Monitorados</h2>
+    <table id="sitesTable">
+      <thead>
+        <tr>
+          <th style="width:32px"></th>
+          <th>Nome</th>
+          <th>Categoria</th>
+          <th>URL</th>
+          <th style="width:80px">Ação</th>
+        </tr>
+      </thead>
+      <tbody id="sitesList">
+        <tr><td colspan="5" class="empty">Carregando...</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ADICIONAR SITE -->
+  <div class="card">
+    <h2>➕ Adicionar Novo Site</h2>
+    <div class="form-row">
+      <div class="form-group" style="flex:2">
+        <label>Nome do site</label>
+        <input type="text" id="newName" placeholder="Ex: Embaixada do Canadá">
+      </div>
+      <div class="form-group" style="flex:3">
+        <label>URL da página de eventos</label>
+        <input type="url" id="newUrl" placeholder="https://...">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Categoria</label>
+        <select id="newCategory">
+          <option>🏛️ Embaixada</option>
+          <option>🎭 Instituto Cultural</option>
+          <option>🎪 Site de Eventos</option>
+          <option>📰 Portal de Notícias</option>
+          <option>🏛️ Órgão Público</option>
+          <option>🌐 Outro</option>
+        </select>
+      </div>
+      <div class="form-group" style="max-width:120px">
+        <label>Emoji bandeira</label>
+        <input type="text" id="newFlag" placeholder="🌐" maxlength="4">
+      </div>
+      <div class="form-group" style="justify-content:flex-end">
+        <label>&nbsp;</label>
+        <button class="btn btn-success" onclick="addSite()">➕ Adicionar</button>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<div id="toast"></div>
+
+<script>
+const OWNER = "lhoff196382";
+const REPO  = "embassy-events";
+const BRANCH = "master";
+
+// ── Token ──────────────────────────────────────────────────────────────────
+function getToken() { return localStorage.getItem("gh_token") || ""; }
+function saveToken() {
+  const t = document.getElementById("tokenInput").value.trim();
+  if (!t) { showToast("Cole o token antes de salvar", true); return; }
+  localStorage.setItem("gh_token", t);
+  showToast("Token salvo! Carregando dados...");
+  loadAll();
+}
+
+// ── GitHub API ─────────────────────────────────────────────────────────────
+async function ghGet(path) {
+  const r = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/${path}`, {
+    headers: { Authorization: `token ${getToken()}`, Accept: "application/vnd.github.v3+json" }
+  });
+  if (!r.ok) throw new Error(`Erro ${r.status} ao ler ${path}`);
+  return r.json();
+}
+
+async function ghPut(path, content, sha, message) {
+  const r = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/${path}`, {
+    method: "PUT",
+    headers: { Authorization: `token ${getToken()}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ message, content: btoa(unescape(encodeURIComponent(content))), sha, branch: BRANCH })
+  });
+  if (!r.ok) { const e = await r.json(); throw new Error(e.message || `Erro ${r.status}`); }
+  return r.json();
+}
+
+// ── Carregar dados ─────────────────────────────────────────────────────────
+let sourcesSha, configSha;
+
+async function loadAll() {
+  await Promise.all([loadSources(), loadConfig()]);
+}
+
+async function loadSources() {
+  try {
+    const f = await ghGet("sources.json");
+    sourcesSha = f.sha;
+    const data = JSON.parse(atob(f.content.replace(/\n/g, "")));
+    renderSites(data.custom_sites || []);
+  } catch(e) {
+    document.getElementById("sitesList").innerHTML = `<tr><td colspan="5" class="empty">Erro ao carregar: ${e.message}</td></tr>`;
+  }
+}
+
+async function loadConfig() {
+  try {
+    const f = await ghGet("config.json");
+    configSha = f.sha;
+    const cfg = JSON.parse(atob(f.content.replace(/\n/g, "")));
+    document.getElementById("cfgCity").value  = cfg.city  || "";
+    document.getElementById("cfgState").value = cfg.state || "";
+    document.getElementById("cfgFreq").value  = cfg.frequency_days || 5;
+    document.getElementById("lastRun").textContent = cfg.last_run || "nunca";
+  } catch(e) {
+    console.warn("Erro ao carregar config:", e);
+  }
+}
+
+// ── Renderizar tabela de sites ─────────────────────────────────────────────
+let currentSites = [];
+
+function renderSites(sites) {
+  currentSites = sites;
+  const tbody = document.getElementById("sitesList");
+  if (!sites.length) {
+    tbody.innerHTML = '<tr><td colspan="5" class="empty">Nenhum site cadastrado ainda.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = sites.map((s, i) => `
+    <tr>
+      <td style="font-size:1.3rem">${s.flag || "🌐"}</td>
+      <td><strong>${esc(s.name)}</strong></td>
+      <td><span class="badge">${esc(s.category || "🌐 Outro")}</span></td>
+      <td style="font-size:0.82rem;color:#555">
+        <a href="${esc(s.url)}" target="_blank">${esc(s.url.slice(0,60))}${s.url.length>60?"…":""}</a>
+      </td>
+      <td>
+        <button class="btn btn-danger" onclick="deleteSite(${i})" title="Remover">🗑️ Apagar</button>
+      </td>
+    </tr>`).join("");
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+
+// ── Salvar configurações ───────────────────────────────────────────────────
+async function saveConfig() {
+  if (!getToken()) { showToast("Configure o token primeiro", true); return; }
+  const city  = document.getElementById("cfgCity").value.trim();
+  const state = document.getElementById("cfgState").value.trim().toUpperCase();
+  const freq  = parseInt(document.getElementById("cfgFreq").value) || 5;
+  if (!city) { showToast("Informe a cidade", true); return; }
+  try {
+    const f = await ghGet("config.json");
+    const cfg = JSON.parse(atob(f.content.replace(/\n/g,"")));
+    cfg.city = city; cfg.state = state; cfg.frequency_days = freq;
+    await ghPut("config.json", JSON.stringify(cfg, null, 2), f.sha, `config: atualiza cidade=${city}, frequência=${freq}d`);
+    configSha = (await ghGet("config.json")).sha;
+    showToast("✅ Configurações salvas!");
+  } catch(e) { showToast("Erro: " + e.message, true); }
+}
+
+// ── Adicionar site ─────────────────────────────────────────────────────────
+async function addSite() {
+  if (!getToken()) { showToast("Configure o token primeiro", true); return; }
+  const name     = document.getElementById("newName").value.trim();
+  const url      = document.getElementById("newUrl").value.trim();
+  const category = document.getElementById("newCategory").value;
+  const flag     = document.getElementById("newFlag").value.trim() || "🌐";
+  if (!name || !url) { showToast("Preencha nome e URL", true); return; }
+  if (!url.startsWith("http")) { showToast("URL inválida", true); return; }
+  try {
+    const f = await ghGet("sources.json");
+    const data = JSON.parse(atob(f.content.replace(/\n/g,"")));
+    if (data.custom_sites.some(s => s.url === url)) { showToast("Este site já está cadastrado", true); return; }
+    data.custom_sites.push({ name, flag, url, category });
+    await ghPut("sources.json", JSON.stringify(data, null, 2), f.sha, `feat: adiciona site '${name}'`);
+    document.getElementById("newName").value = "";
+    document.getElementById("newUrl").value  = "";
+    document.getElementById("newFlag").value = "";
+    showToast(`✅ "${name}" adicionado!`);
+    await loadSources();
+  } catch(e) { showToast("Erro: " + e.message, true); }
+}
+
+// ── Apagar site ────────────────────────────────────────────────────────────
+async function deleteSite(index) {
+  const site = currentSites[index];
+  if (!confirm(`Remover "${site.name}"?`)) return;
+  try {
+    const f = await ghGet("sources.json");
+    const data = JSON.parse(atob(f.content.replace(/\n/g,"")));
+    data.custom_sites.splice(index, 1);
+    await ghPut("sources.json", JSON.stringify(data, null, 2), f.sha, `feat: remove site '${site.name}'`);
+    showToast(`🗑️ "${site.name}" removido`);
+    await loadSources();
+  } catch(e) { showToast("Erro: " + e.message, true); }
+}
+
+// ── Toast ──────────────────────────────────────────────────────────────────
+function showToast(msg, isError = false) {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.className   = isError ? "error" : "";
+  t.style.display = "block";
+  setTimeout(() => t.style.display = "none", 3500);
+}
+
+// ── Init ───────────────────────────────────────────────────────────────────
+window.onload = () => {
+  const saved = getToken();
+  if (saved) {
+    document.getElementById("tokenInput").value = "••••••••••••••••";
+    loadAll();
+  }
+};
+</script>
+</body>
+</html>
