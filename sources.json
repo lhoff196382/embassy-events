@@ -2,67 +2,67 @@
   "comment": "Gerado automaticamente. Para adicionar sites, abra uma Issue no GitHub com o template 'Adicionar site para monitorar'.",
   "custom_sites": [
     {
-      "name": "Embaixada da FranÃÂÃÂ§a ÃÂ¢ÃÂÃÂ Agenda",
-      "flag": "ÃÂ°ÃÂÃÂÃÂ«ÃÂ°ÃÂÃÂÃÂ·",
+      "name": "Embaixada da Franca - Agenda",
+      "flag": "🇫🇷",
       "url": "https://br.ambafrance.org/Agenda-cultural",
-      "category": "ÃÂ°ÃÂÃÂÃÂÃÂ¯ÃÂ¸ÃÂ Embaixada"
+      "category": "🏛️ Embaixada"
     },
     {
       "name": "Embaixada do Reino Unido",
-      "flag": "ÃÂ°ÃÂÃÂÃÂ¬ÃÂ°ÃÂÃÂÃÂ§",
+      "flag": "🇬🇧",
       "url": "https://www.gov.uk/world/organisations/british-embassy-brasilia",
-      "category": "ÃÂ°ÃÂÃÂÃÂÃÂ¯ÃÂ¸ÃÂ Embaixada"
+      "category": "🏛️ Embaixada"
     },
     {
-      "name": "Embaixada da Alemanha ÃÂ¢ÃÂÃÂ Cultura",
-      "flag": "ÃÂ°ÃÂÃÂÃÂ©ÃÂ°ÃÂÃÂÃÂª",
+      "name": "Embaixada da Alemanha - Cultura",
+      "flag": "🇩🇪",
       "url": "https://brasilien.diplo.de/br-pt/themen/kultur",
-      "category": "ÃÂ°ÃÂÃÂÃÂÃÂ¯ÃÂ¸ÃÂ Embaixada"
+      "category": "🏛️ Embaixada"
     },
     {
-      "name": "Embaixada da ItÃÂÃÂ¡lia",
-      "flag": "ÃÂ°ÃÂÃÂÃÂ®ÃÂ°ÃÂÃÂÃÂ¹",
+      "name": "Embaixada da Italia",
+      "flag": "🇮🇹",
       "url": "https://ambrabrasilia.esteri.it/pt/news/eventi/",
-      "category": "ÃÂ°ÃÂÃÂÃÂÃÂ¯ÃÂ¸ÃÂ Embaixada"
+      "category": "🏛️ Embaixada"
     },
     {
-      "name": "Embaixada do JapÃÂÃÂ£o",
-      "flag": "ÃÂ°ÃÂÃÂÃÂ¯ÃÂ°ÃÂÃÂÃÂµ",
+      "name": "Embaixada do Japao",
+      "flag": "🇯🇵",
       "url": "https://www.br.emb-japan.go.jp/itpr_pt/eventinformation.html",
-      "category": "ÃÂ°ÃÂÃÂÃÂÃÂ¯ÃÂ¸ÃÂ Embaixada"
+      "category": "🏛️ Embaixada"
     },
     {
-      "name": "Embaixada dos EUA ÃÂ¢ÃÂÃÂ Eventos",
-      "flag": "ÃÂ°ÃÂÃÂÃÂºÃÂ°ÃÂÃÂÃÂ¸",
+      "name": "Embaixada dos EUA - Eventos",
+      "flag": "🇺🇸",
       "url": "https://br.usembassy.gov/pt/eventos/",
-      "category": "ÃÂ°ÃÂÃÂÃÂÃÂ¯ÃÂ¸ÃÂ Embaixada"
+      "category": "🏛️ Embaixada"
     },
     {
       "name": "Embaixada de Portugal",
-      "flag": "ÃÂ°ÃÂÃÂÃÂµÃÂ°ÃÂÃÂÃÂ¹",
+      "flag": "🇵🇹",
       "url": "https://brasilia.embaixadaportugal.mne.gov.pt/pt/noticias-e-agenda/agenda",
-      "category": "ÃÂ°ÃÂÃÂÃÂÃÂ¯ÃÂ¸ÃÂ Embaixada"
+      "category": "🏛️ Embaixada"
     },
     {
       "name": "Embaixada da Espanha",
-      "flag": "ÃÂ°ÃÂÃÂÃÂªÃÂ°ÃÂÃÂÃÂ¸",
+      "flag": "🇪🇸",
       "url": "https://www.exteriores.gob.es/Embajadas/brasilia/pt/Comunicacion/Paginas/Eventos.aspx",
-      "category": "ÃÂ°ÃÂÃÂÃÂÃÂ¯ÃÂ¸ÃÂ Embaixada"
+      "category": "🏛️ Embaixada"
     },
     {
-      "name": "CLUBE DO CHORO",
-      "flag": "Ã°ÂÂÂ",
+      "name": "Clube do Choro",
+      "flag": "🎵",
       "url": "https://clubedochoro.com.br/",
-      "category": "Ã°ÂÂÂª Site de Eventos"
+      "category": "🎪 Site de Eventos"
     },
     {
       "name": "Bilheteria Digital",
-      "flag": "ð",
+      "flag": "🎟️",
       "url": "https://www.bilheteriadigital.com/",
-      "category": "ðª Site de Eventos"
+      "category": "🎪 Site de Eventos"
     },
     {
-      "name": "Agenda Cultura Brasilia",
+      "name": "Agenda Cultural Brasilia",
       "flag": "🌐",
       "url": "https://brasilia.deboa.com/assunto/agenda-cultural-de-brasilia-2026/",
       "category": "🎪 Site de Eventos"
