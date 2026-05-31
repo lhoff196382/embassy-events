@@ -3,69 +3,63 @@
   "custom_sites": [
     {
       "name": "Embaixada da Franca - Agenda",
-      "flag": "🇫🇷",
+      "flag": "ð«ð·",
       "url": "https://br.ambafrance.org/Agenda-cultural",
-      "category": "🏛️ Embaixada"
+      "category": "ðï¸ Embaixada"
     },
     {
       "name": "Embaixada do Reino Unido",
-      "flag": "🇬🇧",
+      "flag": "ð¬ð§",
       "url": "https://www.gov.uk/world/organisations/british-embassy-brasilia",
-      "category": "🏛️ Embaixada"
+      "category": "ðï¸ Embaixada"
     },
     {
       "name": "Embaixada da Alemanha - Cultura",
-      "flag": "🇩🇪",
+      "flag": "ð©ðª",
       "url": "https://brasilien.diplo.de/br-pt/themen/kultur",
-      "category": "🏛️ Embaixada"
-    },
-    {
-      "name": "Embaixada da Italia",
-      "flag": "🇮🇹",
-      "url": "https://ambrabrasilia.esteri.it/pt/news/eventi/",
-      "category": "🏛️ Embaixada"
+      "category": "ðï¸ Embaixada"
     },
     {
       "name": "Embaixada do Japao",
-      "flag": "🇯🇵",
+      "flag": "ð¯ðµ",
       "url": "https://www.br.emb-japan.go.jp/itpr_pt/eventinformation.html",
-      "category": "🏛️ Embaixada"
+      "category": "ðï¸ Embaixada"
     },
     {
       "name": "Embaixada dos EUA - Eventos",
-      "flag": "🇺🇸",
+      "flag": "ðºð¸",
       "url": "https://br.usembassy.gov/pt/eventos/",
-      "category": "🏛️ Embaixada"
+      "category": "ðï¸ Embaixada"
     },
     {
       "name": "Embaixada de Portugal",
-      "flag": "🇵🇹",
+      "flag": "ðµð¹",
       "url": "https://brasilia.embaixadaportugal.mne.gov.pt/pt/noticias-e-agenda/agenda",
-      "category": "🏛️ Embaixada"
+      "category": "ðï¸ Embaixada"
     },
     {
       "name": "Embaixada da Espanha",
-      "flag": "🇪🇸",
+      "flag": "ðªð¸",
       "url": "https://www.exteriores.gob.es/Embajadas/brasilia/pt/Comunicacion/Paginas/Eventos.aspx",
-      "category": "🏛️ Embaixada"
+      "category": "ðï¸ Embaixada"
     },
     {
       "name": "Clube do Choro",
-      "flag": "🎵",
+      "flag": "ðµ",
       "url": "https://clubedochoro.com.br/",
-      "category": "🎪 Site de Eventos"
+      "category": "ðª Site de Eventos"
     },
     {
       "name": "Bilheteria Digital",
-      "flag": "🎟️",
+      "flag": "ðï¸",
       "url": "https://www.bilheteriadigital.com/",
-      "category": "🎪 Site de Eventos"
+      "category": "ðª Site de Eventos"
     },
     {
       "name": "Agenda Cultural Brasilia",
-      "flag": "🌐",
+      "flag": "ð",
       "url": "https://brasilia.deboa.com/assunto/agenda-cultural-de-brasilia-2026/",
-      "category": "🎪 Site de Eventos"
+      "category": "ðª Site de Eventos"
     }
   ]
 }
