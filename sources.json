@@ -2,52 +2,58 @@
   "comment": "Gerado automaticamente. Para adicionar sites, abra uma Issue no GitHub com o template 'Adicionar site para monitorar'.",
   "custom_sites": [
     {
-      "name": "Embaixada da França — Agenda",
-      "flag": "🇫🇷",
+      "name": "Embaixada da FranÃ§a â Agenda",
+      "flag": "ð«ð·",
       "url": "https://br.ambafrance.org/Agenda-cultural",
-      "category": "🏛️ Embaixada"
+      "category": "ðï¸ Embaixada"
     },
     {
       "name": "Embaixada do Reino Unido",
-      "flag": "🇬🇧",
+      "flag": "ð¬ð§",
       "url": "https://www.gov.uk/world/organisations/british-embassy-brasilia",
-      "category": "🏛️ Embaixada"
+      "category": "ðï¸ Embaixada"
     },
     {
-      "name": "Embaixada da Alemanha — Cultura",
-      "flag": "🇩🇪",
+      "name": "Embaixada da Alemanha â Cultura",
+      "flag": "ð©ðª",
       "url": "https://brasilien.diplo.de/br-pt/themen/kultur",
-      "category": "🏛️ Embaixada"
+      "category": "ðï¸ Embaixada"
     },
     {
-      "name": "Embaixada da Itália",
-      "flag": "🇮🇹",
+      "name": "Embaixada da ItÃ¡lia",
+      "flag": "ð®ð¹",
       "url": "https://ambrabrasilia.esteri.it/pt/news/eventi/",
-      "category": "🏛️ Embaixada"
+      "category": "ðï¸ Embaixada"
     },
     {
-      "name": "Embaixada do Japão",
-      "flag": "🇯🇵",
+      "name": "Embaixada do JapÃ£o",
+      "flag": "ð¯ðµ",
       "url": "https://www.br.emb-japan.go.jp/itpr_pt/eventinformation.html",
-      "category": "🏛️ Embaixada"
+      "category": "ðï¸ Embaixada"
     },
     {
-      "name": "Embaixada dos EUA — Eventos",
-      "flag": "🇺🇸",
+      "name": "Embaixada dos EUA â Eventos",
+      "flag": "ðºð¸",
       "url": "https://br.usembassy.gov/pt/eventos/",
-      "category": "🏛️ Embaixada"
+      "category": "ðï¸ Embaixada"
     },
     {
       "name": "Embaixada de Portugal",
-      "flag": "🇵🇹",
+      "flag": "ðµð¹",
       "url": "https://brasilia.embaixadaportugal.mne.gov.pt/pt/noticias-e-agenda/agenda",
-      "category": "🏛️ Embaixada"
+      "category": "ðï¸ Embaixada"
     },
     {
       "name": "Embaixada da Espanha",
-      "flag": "🇪🇸",
+      "flag": "ðªð¸",
       "url": "https://www.exteriores.gob.es/Embajadas/brasilia/pt/Comunicacion/Paginas/Eventos.aspx",
-      "category": "🏛️ Embaixada"
+      "category": "ðï¸ Embaixada"
+    },
+    {
+      "name": "CLUBE DO CHORO",
+      "flag": "🌐",
+      "url": "https://clubedochoro.com.br/",
+      "category": "🎪 Site de Eventos"
     }
   ]
 }
