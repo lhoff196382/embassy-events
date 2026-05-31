@@ -546,8 +546,7 @@ def build_html(rss, custom, sympla, ddg, ig, freq=5):
   </p>
   {section("📡 RSS — Institutos Culturais", rss)}
   {section("🌐 Sites Monitorados (sources.json)", custom)}
-  {section("🎟️ Sympla — Eventos em Brasília/DF", sympla)}
-  {section("🔍 DuckDuckGo — Busca Web", ddg)}
+{section("🔍 DuckDuckGo — Busca Web", ddg)}
   {section("📸 Instagram", ig)}
   <hr style="margin-top:32px">
   <p style="font-size:11px;color:#aaa">
@@ -606,9 +605,7 @@ if __name__ == "__main__":
     print("\n[2/5] Sites personalizados (sources.json)...")
     custom = scrape_custom_sites()
     print(f"      {len(custom)} resultado(s)")
-    print("\n[3/5] Sympla...")
-    sympla = scrape_sympla()
-    print(f"      {len(sympla)} resultado(s)")
+    sympla = []
     print("\n[4/5] DuckDuckGo Search...")
     ddg = scrape_ddg()
     print(f"      {len(ddg)} resultado(s)")
