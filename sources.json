@@ -3,7 +3,6 @@
   "custom_sites": [
     {
       "name": "Embaixada da Franca - Agenda",
-<<<<<<< HEAD
       "flag": "FR",
       "url": "https://br.ambafrance.org/Agenda-cultural",
       "category": "Embaixada"
@@ -67,71 +66,6 @@
       "flag": "BR",
       "url": "https://brasilia.deboa.com/assunto/agenda-cultural-de-brasilia-2026/",
       "category": "Site de Eventos"
-=======
-      "flag": "Ã°ÂÂÂ«Ã°ÂÂÂ·",
-      "url": "https://br.ambafrance.org/Agenda-cultural",
-      "category": "Ã°ÂÂÂÃ¯Â¸Â Embaixada"
-    },
-    {
-      "name": "Embaixada do Reino Unido",
-      "flag": "Ã°ÂÂÂ¬Ã°ÂÂÂ§",
-      "url": "https://www.gov.uk/world/organisations/british-embassy-brasilia",
-      "category": "Ã°ÂÂÂÃ¯Â¸Â Embaixada"
-    },
-    {
-      "name": "Embaixada da Alemanha - Cultura",
-      "flag": "Ã°ÂÂÂ©Ã°ÂÂÂª",
-      "url": "https://brasilien.diplo.de/br-pt/themen/kultur",
-      "category": "Ã°ÂÂÂÃ¯Â¸Â Embaixada"
-    },
-    {
-      "name": "Embaixada do Japao",
-      "flag": "Ã°ÂÂÂ¯Ã°ÂÂÂµ",
-      "url": "https://www.br.emb-japan.go.jp/itpr_pt/eventinformation.html",
-      "category": "Ã°ÂÂÂÃ¯Â¸Â Embaixada"
-    },
-    {
-      "name": "Embaixada dos EUA - Eventos",
-      "flag": "Ã°ÂÂÂºÃ°ÂÂÂ¸",
-      "url": "https://br.usembassy.gov/pt/eventos/",
-      "category": "Ã°ÂÂÂÃ¯Â¸Â Embaixada"
-    },
-    {
-      "name": "Embaixada de Portugal",
-      "flag": "Ã°ÂÂÂµÃ°ÂÂÂ¹",
-      "url": "https://brasilia.embaixadaportugal.mne.gov.pt/pt/noticias-e-agenda/agenda",
-      "category": "Ã°ÂÂÂÃ¯Â¸Â Embaixada"
-    },
-    {
-      "name": "Embaixada da Espanha",
-      "flag": "Ã°ÂÂÂªÃ°ÂÂÂ¸",
-      "url": "https://www.exteriores.gob.es/Embajadas/brasilia/pt/Comunicacion/Paginas/Eventos.aspx",
-      "category": "Ã°ÂÂÂÃ¯Â¸Â Embaixada"
-    },
-    {
-      "name": "Clube do Choro",
-      "flag": "Ã°ÂÂÂµ",
-      "url": "https://clubedochoro.com.br/",
-      "category": "Ã°ÂÂÂª Site de Eventos"
-    },
-    {
-      "name": "Bilheteria Digital",
-      "flag": "Ã°ÂÂÂÃ¯Â¸Â",
-      "url": "https://www.bilheteriadigital.com/",
-      "category": "Ã°ÂÂÂª Site de Eventos"
-    },
-    {
-      "name": "Agenda Cultural Brasilia",
-      "flag": "Ã°ÂÂÂ",
-      "url": "https://brasilia.deboa.com/assunto/agenda-cultural-de-brasilia-2026/",
-      "category": "Ã°ÂÂÂª Site de Eventos"
-    },
-    {
-      "name": "Embaixada da Italia",
-      "flag": "🌐",
-      "url": "https://ambbrasilia.esteri.it/pt/",
-      "category": "🏛️ Embaixada"
->>>>>>> 95bf84872e73f9b19c58d3ff70ca5edab870181c
     }
   ]
 }
