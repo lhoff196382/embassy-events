@@ -188,11 +188,19 @@ async function ghGet(path) {
   return r.json();
 }
 
+function utf8ToBase64(str) {
+  // Codificação correta para UTF-8 com suporte a emojis e acentos
+  const bytes = new TextEncoder().encode(str);
+  let binary = "";
+  bytes.forEach(b => binary += String.fromCharCode(b));
+  return btoa(binary);
+}
+
 async function ghPut(path, content, sha, message) {
   const r = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/${path}`, {
     method: "PUT",
     headers: { Authorization: `token ${getToken()}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ message, content: btoa(unescape(encodeURIComponent(content))), sha, branch: BRANCH })
+    body: JSON.stringify({ message, content: utf8ToBase64(content), sha, branch: BRANCH })
   });
   if (!r.ok) { const e = await r.json(); throw new Error(e.message || `Erro ${r.status}`); }
   return r.json();
@@ -205,11 +213,18 @@ async function loadAll() {
   await Promise.all([loadSources(), loadConfig()]);
 }
 
+function base64ToUtf8(b64) {
+  const binary = atob(b64.replace(/\n/g, ""));
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return new TextDecoder("utf-8").decode(bytes);
+}
+
 async function loadSources() {
   try {
     const f = await ghGet("sources.json");
     sourcesSha = f.sha;
-    const data = JSON.parse(atob(f.content.replace(/\n/g, "")));
+    const data = JSON.parse(base64ToUtf8(f.content));
     renderSites(data.custom_sites || []);
   } catch(e) {
     document.getElementById("sitesList").innerHTML = `<tr><td colspan="5" class="empty">Erro ao carregar: ${e.message}</td></tr>`;
@@ -220,7 +235,7 @@ async function loadConfig() {
   try {
     const f = await ghGet("config.json");
     configSha = f.sha;
-    const cfg = JSON.parse(atob(f.content.replace(/\n/g, "")));
+    const cfg = JSON.parse(base64ToUtf8(f.content));
     document.getElementById("cfgCity").value  = cfg.city  || "";
     document.getElementById("cfgState").value = cfg.state || "";
     document.getElementById("cfgFreq").value  = cfg.frequency_days || 5;
