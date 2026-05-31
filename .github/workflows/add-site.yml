@@ -26,42 +26,41 @@ jobs:
           ISSUE_BODY: ${{ github.event.issue.body }}
           ISSUE_NUMBER: ${{ github.event.issue.number }}
         run: |
-          python - <<'EOF'
-          import os, json, re
+          python3 - <<'PYEOF'
+          import os, json, re, sys
 
-          body = os.environ["ISSUE_BODY"]
+          body = os.environ.get("ISSUE_BODY", "")
 
           def extract(label):
               pattern = rf"### {label}\s*\n+([^\n#]+)"
               m = re.search(pattern, body, re.IGNORECASE)
-              return m.group(1).strip() if m else ""
+              val = m.group(1).strip() if m else ""
+              return "" if val.lower() in ("_no response_", "none", "") else val
 
           name     = extract("Nome do site")
-          url      = extract("URL da página de eventos")
-          category = extract("Categoria")
-          flag     = extract("Emoji da bandeira.*?")
+          url      = extract("URL da pagina de eventos") or extract("URL")
+          category = extract("Categoria") or "Outro"
+          flag     = extract("Emoji da bandeira.*?") or ""
 
-          if not flag or flag.lower() in ("_no response_", ""):
-              # Tenta adivinhar a bandeira pela categoria
-              flag = "🌐"
+          # Remove emojis do flag para evitar problemas de encoding
+          flag = re.sub(r'[^\x00-\x7F]', '', flag).strip() or "?"
 
           if not name or not url:
-              print("ERRO: nome ou URL não encontrados na issue")
-              exit(1)
+              print("ERRO: nome ou URL nao encontrados na issue")
+              sys.exit(1)
 
           if not url.startswith("http"):
-              print("ERRO: URL inválida")
-              exit(1)
+              print("ERRO: URL invalida")
+              sys.exit(1)
 
           path = "sources.json"
           with open(path, encoding="utf-8") as f:
               data = json.load(f)
 
-          # Evita duplicata
           existing_urls = [s.get("url","") for s in data.get("custom_sites", [])]
           if url in existing_urls:
-              print(f"Site já cadastrado: {url}")
-              exit(0)
+              print(f"Site ja cadastrado: {url}")
+              sys.exit(0)
 
           data["custom_sites"].append({
               "name":     name,
@@ -71,17 +70,17 @@ jobs:
           })
 
           with open(path, "w", encoding="utf-8") as f:
-              json.dump(data, f, ensure_ascii=False, indent=2)
+              json.dump(data, f, ensure_ascii=True, indent=2)
 
-          print(f"Adicionado: {name} ({category}) — {url}")
-          EOF
+          print(f"Adicionado: {name} ({category}) - {url}")
+          PYEOF
 
       - name: Commit e push
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add sources.json
-          git diff --cached --quiet || git commit -m "feat: adiciona site via issue #${{ github.event.issue.number }} — ${{ github.event.issue.title }}"
+          git diff --cached --quiet || git commit -m "feat: adiciona site via issue #${{ github.event.issue.number }}"
           git push
 
       - name: Comentar na issue
@@ -89,14 +88,14 @@ jobs:
         with:
           script: |
             github.rest.issues.createComment({
-              owner:      context.repo.owner,
-              repo:       context.repo.repo,
+              owner: context.repo.owner,
+              repo:  context.repo.repo,
               issue_number: context.issue.number,
-              body: "✅ **Site adicionado com sucesso!**\n\nO `sources.json` foi atualizado. O site será monitorado na próxima varredura (a cada 5 dias) ou você pode disparar manualmente em **Actions → Embassy Cultural Events → Run workflow**."
+              body: "Site adicionado com sucesso! Sera monitorado na proxima varredura."
             });
             github.rest.issues.update({
-              owner:      context.repo.owner,
-              repo:       context.repo.repo,
+              owner: context.repo.owner,
+              repo:  context.repo.repo,
               issue_number: context.issue.number,
               state: "closed"
             });

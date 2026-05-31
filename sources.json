@@ -1,71 +1,71 @@
 {
-  "comment": "Gerado automaticamente. Para adicionar sites, abra uma Issue no GitHub com o template 'Adicionar site para monitorar'.",
+  "comment": "Para adicionar sites use o painel web ou abra uma Issue no GitHub.",
   "custom_sites": [
     {
       "name": "Embaixada da Franca - Agenda",
-      "flag": "🇫🇷",
+      "flag": "FR",
       "url": "https://br.ambafrance.org/Agenda-cultural",
-      "category": "🏛️ Embaixada"
+      "category": "Embaixada"
     },
     {
       "name": "Embaixada do Reino Unido",
-      "flag": "🇬🇧",
+      "flag": "GB",
       "url": "https://www.gov.uk/world/organisations/british-embassy-brasilia",
-      "category": "🏛️ Embaixada"
+      "category": "Embaixada"
     },
     {
       "name": "Embaixada da Alemanha - Cultura",
-      "flag": "🇩🇪",
+      "flag": "DE",
       "url": "https://brasilien.diplo.de/br-pt/themen/kultur",
-      "category": "🏛️ Embaixada"
+      "category": "Embaixada"
     },
     {
       "name": "Embaixada da Italia",
-      "flag": "🇮🇹",
+      "flag": "IT",
       "url": "https://ambrabrasilia.esteri.it/pt/news/eventi/",
-      "category": "🏛️ Embaixada"
+      "category": "Embaixada"
     },
     {
       "name": "Embaixada do Japao",
-      "flag": "🇯🇵",
+      "flag": "JP",
       "url": "https://www.br.emb-japan.go.jp/itpr_pt/eventinformation.html",
-      "category": "🏛️ Embaixada"
+      "category": "Embaixada"
     },
     {
       "name": "Embaixada dos EUA - Eventos",
-      "flag": "🇺🇸",
+      "flag": "US",
       "url": "https://br.usembassy.gov/pt/eventos/",
-      "category": "🏛️ Embaixada"
+      "category": "Embaixada"
     },
     {
       "name": "Embaixada de Portugal",
-      "flag": "🇵🇹",
+      "flag": "PT",
       "url": "https://brasilia.embaixadaportugal.mne.gov.pt/pt/noticias-e-agenda/agenda",
-      "category": "🏛️ Embaixada"
+      "category": "Embaixada"
     },
     {
       "name": "Embaixada da Espanha",
-      "flag": "🇪🇸",
+      "flag": "ES",
       "url": "https://www.exteriores.gob.es/Embajadas/brasilia/pt/Comunicacion/Paginas/Eventos.aspx",
-      "category": "🏛️ Embaixada"
+      "category": "Embaixada"
     },
     {
       "name": "Clube do Choro",
-      "flag": "🎵",
+      "flag": "BR",
       "url": "https://clubedochoro.com.br/",
-      "category": "🎪 Site de Eventos"
+      "category": "Site de Eventos"
     },
     {
       "name": "Bilheteria Digital",
-      "flag": "🎟️",
+      "flag": "BR",
       "url": "https://www.bilheteriadigital.com/",
-      "category": "🎪 Site de Eventos"
+      "category": "Site de Eventos"
     },
     {
       "name": "Agenda Cultural Brasilia",
-      "flag": "🌐",
+      "flag": "BR",
       "url": "https://brasilia.deboa.com/assunto/agenda-cultural-de-brasilia-2026/",
-      "category": "🎪 Site de Eventos"
+      "category": "Site de Eventos"
     }
   ]
 }
