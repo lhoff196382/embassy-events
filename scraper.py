@@ -527,7 +527,7 @@ def section(title, items):
       {THEAD}<tbody>{make_rows(items)}</tbody>
     </table>"""
 
-def build_html(rss, custom, sympla, ddg, ig):
+def build_html(rss, custom, sympla, ddg, ig, freq=5):
     today  = TODAY.strftime("%d/%m/%Y")
     d_from = DATE_FROM.strftime("%d/%m/%Y")
     d_to   = DATE_TO.strftime("%d/%m/%Y")
@@ -538,7 +538,7 @@ def build_html(rss, custom, sympla, ddg, ig):
   <p style="color:#555">
     Varredura em <strong>{today}</strong> —
     eventos de <strong>{d_from}</strong> até <strong>{d_to}</strong>.
-    Próxima em 5 dias.
+    Próxima em {freq} dias.
   </p>
   <p style="font-size:12px;color:#888">
     📋 Diretório de referência:
@@ -588,7 +588,6 @@ if __name__ == "__main__":
         exit(0)
 
     # ── Atualiza queries com a cidade configurada ─────────────────────────────
-    global DDG_QUERIES, SYMPLA_API
     DDG_QUERIES = [
         f"eventos culturais embaixadas {city} {TODAY.year}",
         f"agenda cultural consulados {city} {TODAY.year}",
@@ -619,7 +618,7 @@ if __name__ == "__main__":
 
     total = len(rss) + len(custom) + len(sympla) + len(ddg) + len(ig)
     print(f"\nTotal: {total}. Enviando e-mail...")
-    html = build_html(rss, custom, sympla, ddg, ig)
+    html = build_html(rss, custom, sympla, ddg, ig, freq=freq)
     send_email(html, total)
 
     # ── Salva data de execução ────────────────────────────────────────────────
