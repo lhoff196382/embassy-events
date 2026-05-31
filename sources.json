@@ -20,12 +20,6 @@
       "category": "Embaixada"
     },
     {
-      "name": "Embaixada da Italia",
-      "flag": "IT",
-      "url": "https://ambrabrasilia.esteri.it/pt/news/eventi/",
-      "category": "Embaixada"
-    },
-    {
       "name": "Embaixada do Japao",
       "flag": "JP",
       "url": "https://www.br.emb-japan.go.jp/itpr_pt/eventinformation.html",
@@ -69,7 +63,7 @@
     },
     {
       "name": "Embaixada da China",
-      "flag": "🌐",
+      "flag": "ð",
       "url": "https://br.china-embassy.gov.cn/por/sghds/",
       "category": "Embaixada"
     }
