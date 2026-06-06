@@ -296,9 +296,11 @@ async function addSite() {
   const name     = document.getElementById("newName").value.trim();
   const url      = document.getElementById("newUrl").value.trim();
   const category = document.getElementById("newCategory").value;
-  const flag     = document.getElementById("newFlag").value.trim() || "🌐";
+  // Remove emojis e mantém só ASCII para evitar corrupção
+  const rawFlag  = document.getElementById("newFlag").value.trim();
+  const flag     = rawFlag.replace(/[^\x00-\x7F]/g, "").trim() || "??";
   if (!name || !url) { showToast("Preencha nome e URL", true); return; }
-  if (!url.startsWith("http")) { showToast("URL inválida", true); return; }
+  if (!url.startsWith("http")) { showToast("URL invalida", true); return; }
   try {
     const f = await ghGet("sources.json");
     const data = JSON.parse(atob(f.content.replace(/\n/g,"")));

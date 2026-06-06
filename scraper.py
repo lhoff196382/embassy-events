@@ -171,6 +171,29 @@ def filter_future_events(events: list) -> list:
         print(f"  Removidos {removed} evento(s) com data no passado.")
     return filtered
 
+def deduplicate(events: list) -> list:
+    """Remove eventos duplicados por URL e por título similar."""
+    seen_urls   = set()
+    seen_titles = set()
+    result      = []
+    for ev in events:
+        url   = ev.get("url", "").strip().rstrip("/")
+        # Normaliza título: minúsculas, sem espaços extras, só 60 primeiros chars
+        title = re.sub(r"\s+", " ", ev.get("title", "").lower().strip())[:60]
+        if url and url in seen_urls:
+            continue
+        if title and title in seen_titles:
+            continue
+        if url:
+            seen_urls.add(url)
+        if title:
+            seen_titles.add(title)
+        result.append(ev)
+    removed = len(events) - len(result)
+    if removed:
+        print(f"  Removidos {removed} evento(s) duplicado(s).")
+    return result
+
 # ── HTTP helper ───────────────────────────────────────────────────────────────
 def fetch(url, timeout=15, headers=None):
     h = {"User-Agent": "Mozilla/5.0", "Accept-Language": "pt-BR,pt;q=0.9"}
@@ -634,13 +657,20 @@ if __name__ == "__main__":
     ig = scrape_instagram()
     print(f"      {len(ig)} resultado(s)")
 
-    print("\nFiltrando eventos passados...")
-    rss    = filter_future_events(rss)
-    custom = filter_future_events(custom)
-    ddg    = filter_future_events(ddg)
-    ig     = filter_future_events(ig)
+    print("\nFiltrando e deduplicando eventos...")
+    all_events = filter_future_events(rss + custom + ddg + ig)
+    all_events = deduplicate(all_events)
 
-    total = len(rss) + len(custom) + len(sympla) + len(ddg) + len(ig)
+    # Redistribui por seção para o e-mail
+    def by_channel(ch):
+        return [e for e in all_events if e.get("channel") == ch or ch in e.get("channel","")]
+
+    rss    = [e for e in all_events if e.get("channel") == "📡 RSS"]
+    custom = [e for e in all_events if e.get("channel") not in ("📡 RSS","🔍 Web","📸 Instagram")]
+    ddg    = [e for e in all_events if e.get("channel") == "🔍 Web"]
+    ig     = [e for e in all_events if e.get("channel") == "📸 Instagram"]
+
+    total = len(all_events)
     print(f"\nTotal: {total}. Enviando e-mail...")
     html = build_html(rss, custom, sympla, ddg, ig, freq=freq)
     send_email(html, total)
