@@ -2,8 +2,8 @@ name: Embassy Cultural Events — Brasília
 
 on:
   schedule:
-    # Roda todo dia às 08:00 BRT (11:00 UTC) — Python decide se envia baseado em frequency_days
-    - cron: "0 11 * * *"
+    # Toda segunda-feira às 08:00 BRT (11:00 UTC)
+    - cron: "0 11 * * 1"
   workflow_dispatch:  # permite disparar manualmente
 
 jobs:
