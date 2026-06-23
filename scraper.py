@@ -92,15 +92,24 @@ SYMPLA_API  = "https://www.sympla.com.br/api/public/v1/events?page=1&page_size=2
 
 # ── Perfis Instagram ──────────────────────────────────────────────────────────
 INSTAGRAM_PROFILES = [
-    {"name":"Alianca Francesa Brasilia",   "user":"afbrasilia",              "flag":"🇫🇷"},
-    {"name":"Goethe-Institut Brasilia",    "user":"goethebrasilia",          "flag":"🇩🇪"},
-    {"name":"Instituto Cervantes Bsb",     "user":"institutocervantesbrasilia","flag":"🇪🇸"},
-    {"name":"British Council Brasil",      "user":"brbritish",               "flag":"🇬🇧"},
-    {"name":"Embaixada EUA Brasil",        "user":"embaixadaeua",            "flag":"🇺🇸"},
-    {"name":"Instituto Italiano SP",       "user":"iic_sanpaolo",            "flag":"🇮🇹"},
-    {"name":"Embaixada do Japao BR",       "user":"embaixadajapao",          "flag":"🇯🇵"},
-    {"name":"Embaixada da Franca BR",      "user":"franceaubresil",          "flag":"🇫🇷"},
-    {"name":"Embaixada Alema BR",          "user":"alemanhanobrasil",        "flag":"🇩🇪"},
+    # Institutos culturais
+    {"name":"Alianca Francesa Brasilia",   "user":"afbrasilia",                    "flag":"🇫🇷"},
+    {"name":"Goethe-Institut Brasilia",    "user":"goethebrasilia",                "flag":"🇩🇪"},
+    {"name":"Instituto Cervantes Bsb",     "user":"institutocervantesbrasilia",    "flag":"🇪🇸"},
+    {"name":"British Council Brasil",      "user":"brbritish",                     "flag":"🇬🇧"},
+    {"name":"Instituto Italiano Brasil",   "user":"italyinbrazil",                 "flag":"🇮🇹"},
+    # Embaixadas — Europa
+    {"name":"Embaixada da Franca BR",      "user":"franceaubresil",                "flag":"🇫🇷"},
+    {"name":"Embaixada Alema BR",          "user":"alemanhanobrasil",              "flag":"🇩🇪"},
+    {"name":"Embaixada de Portugal BR",    "user":"embaixadadeportugalembrasilia", "flag":"🇵🇹"},
+    # Embaixadas — Americas
+    {"name":"Embaixada EUA Brasil",        "user":"embaixadaeua",                  "flag":"🇺🇸"},
+    {"name":"Embaixada Argentina BR",      "user":"embaargenbrasil",               "flag":"🇦🇷"},
+    # Embaixadas — Asia
+    {"name":"Embaixada do Japao BR",       "user":"embaixadajapao",                "flag":"🇯🇵"},
+    {"name":"Embaixada da China BR",       "user":"embaixadachina",                "flag":"🇨🇳"},
+    {"name":"Embaixada da India BR",       "user":"indiainbrazil",                 "flag":"🇮🇳"},
+    {"name":"Embaixada da Coreia BR",      "user":"embaixadacoreia",               "flag":"🇰🇷"},
 ]
 
 # ── Detecção de preço ─────────────────────────────────────────────────────────
