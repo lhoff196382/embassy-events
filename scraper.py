@@ -152,16 +152,26 @@ def date_label(text):
 
 def is_past_event(event: dict) -> bool:
     """Retorna True se o evento tem data identificada E ela já passou."""
+    # Verifica pelo label da data gerado pelo scraper
     label = event.get("date", "")
-    # Tenta extrair data do label "📅 dd/mm/yyyy"
-    m = re.search(r"(\d{2})/(\d{2})/(\d{4})", label)
-    if not m:
-        return False  # sem data clara → não descarta
-    try:
-        d = datetime.date(int(m.group(3)), int(m.group(2)), int(m.group(1)))
-        return d < TODAY
-    except Exception:
-        return False
+    m = re.search(r"(\d{1,2})/(\d{1,2})/(\d{4})", label)
+    if m:
+        try:
+            d = datetime.date(int(m.group(3)), int(m.group(2)), int(m.group(1)))
+            return d < TODAY
+        except Exception:
+            pass
+
+    # Verifica também no título — extrai datas do texto bruto
+    title = event.get("title", "")
+    dates = extract_dates(title)
+    if dates:
+        # Se TODAS as datas encontradas são passadas, descarta
+        future = [d for d in dates if d >= TODAY]
+        if not future:
+            return True
+
+    return False  # sem data clara → não descarta
 
 def filter_future_events(events: list) -> list:
     """Remove eventos com data claramente no passado."""
