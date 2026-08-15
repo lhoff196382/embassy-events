@@ -348,6 +348,7 @@ def scrape_instagram():
         download_pictures=False, download_videos=False,
         download_video_thumbnails=False, download_geotags=False,
         download_comments=False, save_metadata=False, quiet=True,
+        max_connection_attempts=1,   # não tentar de novo automaticamente
     )
     cutoff = datetime.datetime.now() - datetime.timedelta(days=10)
 
@@ -370,6 +371,9 @@ def scrape_instagram():
                         "channel": "📸 Instagram",
                     })
                     break
+        except instaloader.exceptions.TooManyRequestsException:
+            print(f"    Instagram limitou requisições (429) — pulando restante dos perfis")
+            break   # para de tentar outros perfis; e-mail será enviado sem Instagram
         except Exception as e:
             print(f"    Erro @{p['user']}: {e}")
 
