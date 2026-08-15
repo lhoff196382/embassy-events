@@ -14,6 +14,9 @@
     {"name": "Bilheteria Digital", "flag": "BR", "url": "https://www.bilheteriadigital.com/", "category": "Site de Eventos"},
     {"name": "Agenda Cultural Brasilia", "flag": "BR", "url": "https://brasilia.deboa.com/assunto/agenda-cultural-de-brasilia-2026/", "category": "Site de Eventos"},
     {"name": "Teatro Poupex", "flag": "BR", "url": "https://www.poupex.com.br/esg/poupex-cultural/", "category": "Instituto Cultural"},
-    {"name": "Caixa Cultural Brasilia", "flag": "BR", "url": "https://www.caixacultural.gov.br/Paginas/Brasilia.aspx", "category": "Instituto Cultural"}
+    {"name": "Caixa Cultural Brasilia", "flag": "BR", "url": "https://www.caixacultural.gov.br/Paginas/Brasilia.aspx", "category": "Instituto Cultural"},
+    {"name": "Teatro UNIP Brasilia", "flag": "BR", "url": "https://teatrounip.com/", "category": "Instituto Cultural"},
+    {"name": "Embaixada do Peru", "flag": "PE", "url": "https://embperubrasil.pe/", "category": "Embaixada"},
+    {"name": "Embaixada dos Paises Baixos (Holanda)", "flag": "NL", "url": "https://www.netherlandsandyou.nl/web/brasil", "category": "Embaixada"}
   ]
 }

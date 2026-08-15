@@ -110,6 +110,10 @@ INSTAGRAM_PROFILES = [
     {"name":"Embaixada da China BR",       "user":"embaixadachina",                "flag":"🇨🇳"},
     {"name":"Embaixada da India BR",       "user":"indiainbrazil",                 "flag":"🇮🇳"},
     {"name":"Embaixada da Coreia BR",      "user":"embaixadacoreia",               "flag":"🇰🇷"},
+    {"name":"Embaixada do Peru BR",        "user":"embperubrasil",                 "flag":"🇵🇪"},
+    {"name":"Embaixada Holanda BR",        "user":"nlinbrasil",                    "flag":"🇳🇱"},
+    # Teatro
+    {"name":"Teatro UNIP Brasilia",        "user":"teatrounip",                    "flag":"🎭"},
 ]
 
 # ── Detecção de preço ─────────────────────────────────────────────────────────
