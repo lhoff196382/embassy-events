@@ -2,8 +2,8 @@ name: Embassy Cultural Events — Brasília
 
 on:
   schedule:
-    # Todo domingo às 19:00 BRT (22:00 UTC)
-    - cron: "0 22 * * 0"
+    # Toda segunda-feira às 08:00 BRT (11:00 UTC) — retomada a partir de 16/11/2026
+    - cron: "0 11 * * 1"
   workflow_dispatch:  # permite disparar manualmente
 
 jobs:
